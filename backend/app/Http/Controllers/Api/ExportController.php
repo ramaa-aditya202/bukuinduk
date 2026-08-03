@@ -35,7 +35,41 @@ class ExportController extends Controller
         // Audit log
         AuditService::logExport(\App\Models\Student::class, $filters);
 
-        return Excel::download(new StudentsExport($filters), $filename);
+        try {
+            return Excel::download(
+                new StudentsExport($filters), 
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        } catch (\Exception $e) {
+            // Fallback manual CSV export if Excel fails
+            $students = \App\Models\Student::with(['parents'])->when($filters['student_status'] ?? null, function($q, $s) {
+                $q->where('student_status', $s);
+            })->get();
+            
+            $headers = ['Nama', 'NISN', 'NIK', 'L/P', 'Tempat Lahir', 'Tgl Lahir', 'Thn Masuk', 'Status Siswa'];
+            $callback = function() use ($students, $headers) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, $headers);
+                foreach ($students as $student) {
+                    fputcsv($file, [
+                        $student->name,
+                        $student->nisn,
+                        $student->nik,
+                        $student->gender,
+                        $student->birth_place,
+                        $student->birth_date,
+                        $student->tahun_masuk,
+                        $student->student_status,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->streamDownload($callback, 'buku_induk_export_fallback_' . now()->format('Y-m-d_His') . '.csv', [
+                'Content-Type' => 'text/csv',
+            ]);
+        }
     }
 
     /**

@@ -157,7 +157,7 @@ export default function TambahSiswaPage() {
 
       <Card className="max-w-4xl mx-auto">
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+          <form onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
             <CardContent className="p-6">
               {currentStep === 0 && <StepIdentitas />}
               {currentStep === 1 && <StepKeluarga guardianType={guardianType} />}
@@ -175,7 +175,7 @@ export default function TambahSiswaPage() {
                   Selanjutnya <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" variant="primary" isLoading={isSubmitting}>
+                <Button type="button" variant="primary" isLoading={isSubmitting} onClick={handleSubmit(onSubmit)}>
                   <Save className="w-4 h-4 mr-2" /> Simpan Data
                 </Button>
               )}
