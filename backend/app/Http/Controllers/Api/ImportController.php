@@ -77,7 +77,7 @@ class ImportController extends Controller
                 'nama', 'nisn', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'tahun_masuk',
                 'anak_ke', 'dari_saudara', 'penanggung_jawab', 'nama_ayah', 'pekerjaan_ayah', 'telp_ayah',
                 'nama_ibu', 'pekerjaan_ibu', 'telp_ibu', 'alamat_jalan', 'alamat_rt', 'alamat_rw',
-                'alamat_kelurahan', 'alamat_kecamatan', 'alamat_kabupaten', 'alamat_provinsi', 'alamat_kode_pos'
+                'alamat_kelurahan', 'alamat_kecamatan', 'alamat_kabupaten', 'alamat_provinsi', 'alamat_kode_pos', 'status_khusus'
             ];
             
             $callback = function() use ($headers) {
@@ -87,7 +87,7 @@ class ImportController extends Controller
                     'Ahmad Fadhil', '0012345678', '3201012345670001', 'L', 'Bogor', '2010-05-15', 2024,
                     2, 3, 'ayah', 'Budi Santoso', 'Wiraswasta', '081234567890',
                     'Siti Aminah', 'Ibu Rumah Tangga', '081234567891', 'Jl. Merdeka No. 1', '001', '002',
-                    'Ciluar', 'Sukaraja', 'Kab. Bogor', 'Jawa Barat', '16710'
+                    'Ciluar', 'Sukaraja', 'Kab. Bogor', 'Jawa Barat', '16710', 'Umum'
                 ]);
                 fclose($file);
             };

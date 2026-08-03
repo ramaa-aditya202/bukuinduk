@@ -26,6 +26,9 @@ export default function DetailSiswaPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [printing, setPrinting] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus, setNewStatus] = useState('aktif');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const fetchStudent = async () => {
     try {
@@ -43,6 +46,12 @@ export default function DetailSiswaPage() {
   useEffect(() => {
     if (id) fetchStudent();
   }, [id]);
+
+  useEffect(() => {
+    if (student) {
+      setNewStatus(student.student_status);
+    }
+  }, [student]);
 
   // Cetak Buku Induk — direct PDF download
   const handlePrint = async () => {
@@ -64,6 +73,26 @@ export default function DetailSiswaPage() {
       toast.error(error?.message || 'Gagal generate PDF');
     } finally {
       setPrinting(false);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    setUpdatingStatus(true);
+    try {
+      await api.put(`/students/${id}`, {
+        ...student,
+        student_status: newStatus,
+        father: student?.parents?.find(p => p.type === 'ayah') || {},
+        mother: student?.parents?.find(p => p.type === 'ibu') || {},
+        guardian: student?.parents?.find(p => p.type === 'wali') || {}
+      });
+      toast.success('Status siswa berhasil diubah!');
+      setShowStatusModal(false);
+      fetchStudent();
+    } catch (error: any) {
+      toast.error(error?.message || 'Gagal mengubah status');
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -96,7 +125,13 @@ export default function DetailSiswaPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {hasRole('super_admin', 'admin_tu') && (
+            <Button variant="ghost" onClick={() => setShowStatusModal(true)}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Ubah Status
+            </Button>
+          )}
           {hasRole('super_admin', 'admin_tu') && (
             <Button variant="ghost" onClick={() => router.push(`/siswa/${id}/edit`)}>
               <Edit3 className="w-4 h-4 mr-2" />
@@ -181,6 +216,32 @@ export default function DetailSiswaPage() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        title="Ubah Status Siswa"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-stone-500">Pilih status terbaru untuk siswa <strong>{student.name}</strong>.</p>
+          <Select
+            label="Status Siswa"
+            options={[
+              { label: 'Aktif', value: 'aktif' },
+              { label: 'Lulus', value: 'lulus' },
+              { label: 'Pindah', value: 'pindah' },
+              { label: 'Keluar', value: 'keluar' },
+              { label: 'Nonaktif', value: 'nonaktif' },
+            ]}
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.target.value)}
+          />
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="ghost" onClick={() => setShowStatusModal(false)}>Batal</Button>
+            <Button variant="primary" onClick={handleUpdateStatus} isLoading={updatingStatus}>Simpan Status</Button>
+          </div>
+        </div>
+      </Modal>
     </DashboardLayout>
   );
 }
@@ -477,6 +538,8 @@ function TabDokumen({ student, onUploadSuccess, hasRole }: { student: Student, o
     { type: 'ijazah', label: 'Ijazah Sebelumnya' },
     { type: 'kk', label: 'Kartu Keluarga' },
     { type: 'akta_kelahiran', label: 'Akta Kelahiran' },
+    { type: 'sktm', label: 'Surat Keterangan Tidak Mampu' },
+    { type: 'sk_kematian', label: 'Surat Kematian' },
   ];
 
   const handleReupload = async (docId: string, file: File) => {

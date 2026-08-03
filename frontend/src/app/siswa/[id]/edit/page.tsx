@@ -308,6 +308,18 @@ function StepRiwayat() {
         <div className="md:col-span-2">
           <Input label="Riwayat Penyakit" {...register('medical_history')} hint="Kosongkan jika tidak ada riwayat penyakit serius" />
         </div>
+
+        <div className="md:col-span-2">
+          <label className="text-sm font-medium text-slate-700 block mb-2">Status Khusus</label>
+          <div className="flex gap-4 flex-wrap">
+            {['Umum', 'Yatim', "Dhu'afa", 'Piatu'].map(s => (
+              <label key={s} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input type="checkbox" value={s} {...register('status')} className="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500" />
+                {s}
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

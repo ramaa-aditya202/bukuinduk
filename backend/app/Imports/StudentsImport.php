@@ -49,7 +49,11 @@ class StudentsImport implements ToModel, WithHeadingRow, SkipsOnError
         $errors = [];
         if (empty($row['nama'])) $errors[] = 'Nama wajib diisi';
         if (empty($row['nisn'])) $errors[] = 'NISN wajib diisi';
+        elseif (strlen((string)$row['nisn']) !== 10) $errors[] = 'NISN harus 10 digit';
+        
         if (empty($row['nik'])) $errors[] = 'NIK wajib diisi';
+        elseif (strlen((string)$row['nik']) !== 16) $errors[] = 'NIK harus 16 digit';
+        
         if (empty($row['jenis_kelamin'])) $errors[] = 'Jenis kelamin wajib diisi';
         if (empty($row['tempat_lahir'])) $errors[] = 'Tempat lahir wajib diisi';
         if (empty($row['tanggal_lahir'])) $errors[] = 'Tanggal lahir wajib diisi';
@@ -89,6 +93,13 @@ class StudentsImport implements ToModel, WithHeadingRow, SkipsOnError
             $birthDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($birthDate)->format('Y-m-d');
         }
 
+        // Parse status_khusus
+        $statusRaw = $row['status_khusus'] ?? 'Umum';
+        $statusArray = array_filter(array_map('trim', explode(',', $statusRaw)));
+        if (empty($statusArray)) {
+            $statusArray = ['Umum'];
+        }
+
         try {
             $student = Student::create([
                 'name'              => $row['nama'],
@@ -102,7 +113,7 @@ class StudentsImport implements ToModel, WithHeadingRow, SkipsOnError
                 'total_siblings'    => (int) ($row['dari_saudara'] ?? 1),
                 'guardian_type'     => $guardianType,
                 'student_status'    => 'aktif',
-                'status'            => ['Umum'],
+                'status'            => $statusArray,
                 'created_by'        => $this->importedBy->id,
                 'updated_by'        => $this->importedBy->id,
                 // Alamat

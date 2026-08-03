@@ -41,6 +41,7 @@ class ImportTemplateExport implements FromArray, WithHeadings, WithTitle, WithSt
             'alamat_kabupaten',
             'alamat_provinsi',
             'alamat_kode_pos',
+            'status_khusus',
         ];
     }
 
@@ -73,6 +74,7 @@ class ImportTemplateExport implements FromArray, WithHeadings, WithTitle, WithSt
                 'Kab. Bogor',       // alamat_kabupaten
                 'Jawa Barat',       // alamat_provinsi
                 '16710',            // alamat_kode_pos
+                'Umum',             // status_khusus
             ],
         ];
     }
@@ -85,10 +87,10 @@ class ImportTemplateExport implements FromArray, WithHeadings, WithTitle, WithSt
     public function styles(Worksheet $sheet)
     {
         // Bold header row
-        $sheet->getStyle('A1:X1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:Y1')->getFont()->setBold(true);
 
         // Auto-size columns
-        foreach (range('A', 'X') as $col) {
+        foreach (range('A', 'Y') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
