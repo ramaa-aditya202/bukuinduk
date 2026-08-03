@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
@@ -13,7 +13,7 @@ import { formatDate } from '@/lib/utils';
 import type { ActivityLog, PaginatedResponse } from '@/types';
 import { ShieldAlert } from 'lucide-react';
 
-export default function PengaturanPage() {
+function PengaturanContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'umum';
   const { hasRole } = useAuth();
@@ -44,6 +44,14 @@ export default function PengaturanPage() {
         />
       </Card>
     </DashboardLayout>
+  );
+}
+
+export default function PengaturanPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PengaturanContent />
+    </Suspense>
   );
 }
 
