@@ -1,0 +1,286 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Google Fonts Import ── */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HALLMARK DESIGN LANGUAGE — Global Styles
+   Gaya visual anggun, hangat, profesional, dan abadi (timeless elegance)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --color-cream: #FAF8F5;
+    --color-cream-dark: #F5F0EA;
+    --color-slate: #1E242B;
+    --color-gold: #C59B27;
+    --color-gold-light: #D4A837;
+    --color-emerald: #1B4D3E;
+    --color-emerald-light: #1B6D4E;
+    --color-border: #DDD8D0;
+  }
+
+  * {
+    @apply border-stone-200;
+  }
+
+  body {
+    @apply bg-cream-50 text-slate-800 font-sans antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-serif font-semibold tracking-tight;
+    color: var(--color-slate);
+  }
+
+  h1 { @apply text-3xl; }
+  h2 { @apply text-2xl; }
+  h3 { @apply text-xl; }
+  h4 { @apply text-lg; }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-cream-100 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-stone-300 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-stone-400;
+  }
+}
+
+@layer components {
+  /* ── Card ── */
+  .card {
+    @apply bg-white rounded-xl border border-stone-200 shadow-warm-sm;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card:hover {
+    @apply shadow-warm-md;
+  }
+  .card-body {
+    @apply p-5;
+  }
+
+  /* ── Button Variants ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-sans font-medium text-sm
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-emerald-700 text-white hover:bg-emerald-600 focus:ring-emerald-600;
+  }
+
+  .btn-gold {
+    @apply btn bg-gold-500 text-white hover:bg-gold-400 focus:ring-gold-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-slate-800 border border-stone-300 hover:bg-cream-100 focus:ring-stone-300;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-slate-700 hover:bg-cream-200 focus:ring-stone-200;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-500 focus:ring-red-500;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-7 py-3 text-base;
+  }
+
+  /* ── Badge / Pill ── */
+  .badge {
+    @apply inline-flex items-center px-3 py-0.5 rounded-pill text-xs font-semibold border;
+    transition: all 0.15s ease;
+  }
+
+  .badge-aktif {
+    @apply bg-status-aktif text-status-aktifText border-green-200;
+  }
+  .badge-lulus {
+    @apply bg-status-lulus text-status-lulusText border-blue-200;
+  }
+  .badge-pindah {
+    @apply bg-status-pindah text-status-pindahText border-amber-200;
+  }
+  .badge-keluar {
+    @apply bg-status-keluar text-status-keluarText border-red-200;
+  }
+  .badge-nonaktif {
+    @apply bg-status-nonaktif text-status-nonaktifText border-gray-200;
+  }
+  .badge-gold {
+    @apply bg-amber-50 text-gold-700 border-gold-400;
+  }
+
+  /* ── Form Inputs ── */
+  .form-input {
+    @apply w-full px-4 py-2.5 bg-white border border-stone-300 rounded-lg
+           font-sans text-sm text-slate-800 placeholder:text-stone-400
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-gold-500/30 focus:border-gold-500;
+  }
+
+  .form-input-error {
+    @apply border-red-400 focus:ring-red-400/30 focus:border-red-400;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
+  }
+
+  .form-error {
+    @apply text-xs text-red-600 mt-1;
+  }
+
+  .form-hint {
+    @apply text-xs text-stone-400 mt-1;
+  }
+
+  /* ── Data Table ── */
+  .data-table {
+    @apply w-full text-sm;
+  }
+  .data-table thead {
+    @apply bg-cream-100;
+  }
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider;
+  }
+  .data-table td {
+    @apply px-4 py-3 text-slate-800;
+  }
+  .data-table tbody tr {
+    @apply border-b border-stone-100 hover:bg-cream-50 transition-colors duration-150 cursor-pointer;
+  }
+
+  /* ── Stepper ── */
+  .stepper-step {
+    @apply flex items-center gap-3;
+  }
+  .stepper-circle {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
+           transition-all duration-300;
+  }
+  .stepper-circle-active {
+    @apply bg-gold-500 text-white shadow-gold-glow;
+  }
+  .stepper-circle-complete {
+    @apply bg-emerald-700 text-white;
+  }
+  .stepper-circle-inactive {
+    @apply bg-stone-200 text-stone-500;
+  }
+  .stepper-line {
+    @apply flex-1 h-0.5 bg-stone-200 transition-all duration-300;
+  }
+  .stepper-line-active {
+    @apply bg-gold-500;
+  }
+
+  /* ── Tabs (Hallmark) ── */
+  .tab-nav {
+    @apply flex border-b border-stone-200;
+  }
+  .tab-item {
+    @apply px-5 py-3 text-sm font-medium text-stone-500 border-b-2 border-transparent
+           transition-all duration-200 hover:text-slate-800 hover:border-stone-300 cursor-pointer;
+  }
+  .tab-item-active {
+    @apply text-gold-600 border-gold-500 font-semibold;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    @apply w-64 bg-emerald-800 text-white min-h-screen flex flex-col;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 text-sm text-emerald-100 rounded-lg mx-2
+           transition-all duration-200 hover:bg-emerald-700 hover:text-white;
+  }
+  .sidebar-link-active {
+    @apply bg-emerald-700 text-white font-medium shadow-warm-sm;
+  }
+
+  /* ── Timeline (riwayat akademik) ── */
+  .timeline-item {
+    @apply relative pl-8 pb-8 border-l-2 border-stone-200 last:border-transparent last:pb-0;
+  }
+  .timeline-dot {
+    @apply absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white;
+  }
+  .timeline-dot-active {
+    @apply bg-gold-500;
+  }
+  .timeline-dot-complete {
+    @apply bg-emerald-700;
+  }
+
+  /* ── Stat Card ── */
+  .stat-card {
+    @apply card p-5;
+  }
+  .stat-value {
+    @apply text-3xl font-serif font-bold text-slate-800;
+  }
+  .stat-label {
+    @apply text-sm text-stone-500 mt-1;
+  }
+
+  /* ── Empty State ── */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+  .empty-state-icon {
+    @apply w-24 h-24 text-stone-300 mb-4;
+  }
+
+  /* ── File Dropzone ── */
+  .dropzone {
+    @apply border-2 border-dashed border-stone-300 rounded-xl p-8 text-center
+           transition-all duration-200 hover:border-gold-400 hover:bg-cream-100 cursor-pointer;
+  }
+  .dropzone-active {
+    @apply border-gold-500 bg-amber-50;
+  }
+}
+
+/* ── Print Optimization ── */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+  }
+  .sidebar, .btn, .tab-nav, nav, header {
+    display: none !important;
+  }
+  .card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .badge {
+    border: 1px solid #333 !important;
+    background: transparent !important;
+    color: #333 !important;
+  }
+}

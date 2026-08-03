@@ -1,0 +1,410 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreStudentRequest;
+use App\Models\Enrollment;
+use App\Models\Guardian;
+use App\Models\Student;
+use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class StudentController extends Controller
+{
+    /**
+     * GET /api/students
+     *
+     * Daftar siswa dengan pagination, search, dan filter.
+     * Server-side — tidak pernah load seluruh data ke frontend.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = Student::with(['currentEnrollment.classRoom', 'currentEnrollment.academicYear', 'photo']);
+
+        // Filter berdasarkan role (wali kelas hanya lihat siswanya)
+        if ($request->user()->isWaliKelas()) {
+            $classIds = $request->user()->homeroomClasses()->pluck('id');
+            $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
+                $q->whereIn('class_id', $classIds);
+            });
+        }
+
+        // Search (nama / NISN)
+        if ($request->filled('search')) {
+            $query->search($request->search);
+        }
+
+        // Filter tahun masuk
+        if ($request->filled('tahun_masuk')) {
+            $query->byTahunMasuk((int) $request->tahun_masuk);
+        }
+
+        // Filter status
+        if ($request->filled('student_status')) {
+            $query->where('student_status', $request->student_status);
+        }
+
+        // Filter gender
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        // Filter kelas (tahun ajaran aktif)
+        if ($request->filled('class_id')) {
+            $query->whereHas('currentEnrollment', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
+            });
+        }
+
+        // Sorting
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDir = $request->input('sort_dir', 'asc');
+        $allowedSorts = ['name', 'nisn', 'tahun_masuk', 'student_status', 'created_at'];
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'desc' ? 'desc' : 'asc');
+        }
+
+        $perPage = min((int) $request->input('per_page', 20), 100);
+        $students = $query->paginate($perPage);
+
+        // Mask NIK untuk role non-admin
+        $canViewSensitive = $request->user()->canViewSensitiveData();
+
+        $students->getCollection()->transform(function ($student) use ($canViewSensitive) {
+            $data = $student->toArray();
+            $data['nik'] = $canViewSensitive ? $student->nik : $student->masked_nik;
+            $data['current_class'] = $student->currentEnrollment?->classRoom?->name ?? '-';
+            $data['photo_url'] = $student->photo?->signed_url;
+            return $data;
+        });
+
+        return response()->json($students);
+    }
+
+    /**
+     * GET /api/students/{id}
+     *
+     * Detail satu siswa — halaman buku induk.
+     */
+    public function show(Request $request, string $id): JsonResponse
+    {
+        $student = Student::with([
+            'parents',
+            'enrollments.classRoom',
+            'enrollments.academicYear',
+            'documents',
+            'photo',
+            'createdBy',
+            'updatedBy',
+        ])->findOrFail($id);
+
+        $this->authorize('view', $student);
+
+        $canViewSensitive = $request->user()->canViewSensitiveData();
+
+        // Build response
+        $data = $student->toArray();
+        $data['nik'] = $canViewSensitive ? $student->nik : $student->masked_nik;
+        $data['photo_url'] = $student->photo?->signed_url;
+
+        // Mask medical history untuk guru
+        if (!$canViewSensitive) {
+            $data['medical_history'] = $student->medical_history ? '[Data tersembunyi]' : null;
+        }
+
+        // Tentukan siapa wali santri
+        $data['guardian_info'] = $this->resolveGuardianInfo($student);
+
+        // Documents dengan signed URLs
+        $data['documents'] = $student->documents->map(function ($doc) {
+            return [
+                'id'            => $doc->id,
+                'doc_type'      => $doc->doc_type,
+                'doc_type_label' => $doc->doc_type_label,
+                'original_filename' => $doc->original_filename,
+                'signed_url'    => $doc->signed_url,
+                'uploaded_at'   => $doc->created_at,
+            ];
+        });
+
+        // Enrollments sebagai timeline
+        $data['academic_timeline'] = $student->enrollments->map(function ($e) {
+            return [
+                'id'             => $e->id,
+                'academic_year'  => $e->academicYear->label,
+                'class_name'     => $e->classRoom->name,
+                'class_level'    => $e->classRoom->level,
+                'status'         => $e->status,
+                'status_label'   => $e->status_label,
+            ];
+        });
+
+        // Log akses data sensitif
+        if ($canViewSensitive) {
+            AuditService::logSensitiveAccess($student, 'full_profile');
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * POST /api/students
+     *
+     * Buat data siswa baru (multi-step form submit).
+     */
+    public function store(StoreStudentRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        // ── Simpan data siswa ──
+        $student = Student::create([
+            'name'              => $validated['name'],
+            'nisn'              => $validated['nisn'],
+            'nik'               => $validated['nik'],
+            'gender'            => $validated['gender'],
+            'birth_place'       => $validated['birth_place'],
+            'birth_date'        => $validated['birth_date'],
+            'medical_history'   => $validated['medical_history'] ?? null,
+            'sibling_order'     => $validated['sibling_order'],
+            'total_siblings'    => $validated['total_siblings'],
+            'status'            => $validated['status'] ?? ['Umum'],
+            'tahun_masuk'       => $validated['tahun_masuk'],
+            'guardian_type'     => $validated['guardian_type'],
+            'entry_class_level' => $validated['entry_class_level'] ?? null,
+            'student_status'    => $validated['student_status'] ?? 'aktif',
+            'created_by'        => $request->user()->id,
+            'updated_by'        => $request->user()->id,
+        ]);
+
+        // ── Simpan data Ayah ──
+        Guardian::create([
+            'student_id' => $student->id,
+            'type'       => 'ayah',
+            ...$validated['father'],
+        ]);
+
+        // ── Simpan data Ibu ──
+        Guardian::create([
+            'student_id' => $student->id,
+            'type'       => 'ibu',
+            ...$validated['mother'],
+        ]);
+
+        // ── Simpan data Wali (jika orang lain) ──
+        if ($validated['guardian_type'] === 'orang_lain' && !empty($validated['guardian'])) {
+            Guardian::create([
+                'student_id' => $student->id,
+                'type'       => 'wali',
+                ...$validated['guardian'],
+            ]);
+        }
+
+        // ── Enrollment awal (jika class_id dan academic_year_id diberikan) ──
+        if (!empty($validated['class_id']) && !empty($validated['academic_year_id'])) {
+            Enrollment::create([
+                'student_id'      => $student->id,
+                'class_id'        => $validated['class_id'],
+                'academic_year_id' => $validated['academic_year_id'],
+                'status'          => null,
+            ]);
+        }
+
+        // Audit log
+        AuditService::logCreate($student, $validated);
+
+        return response()->json([
+            'message' => 'Data siswa berhasil disimpan.',
+            'data'    => $student->load(['parents', 'currentEnrollment.classRoom']),
+        ], 201);
+    }
+
+    /**
+     * PUT /api/students/{id}
+     *
+     * Update data siswa.
+     */
+    public function update(StoreStudentRequest $request, string $id): JsonResponse
+    {
+        $student = Student::findOrFail($id);
+        $this->authorize('update', $student);
+
+        $validated = $request->validated();
+        $original = $student->toArray();
+
+        // Update data siswa
+        $student->update([
+            'name'              => $validated['name'],
+            'nisn'              => $validated['nisn'],
+            'nik'               => $validated['nik'],
+            'gender'            => $validated['gender'],
+            'birth_place'       => $validated['birth_place'],
+            'birth_date'        => $validated['birth_date'],
+            'medical_history'   => $validated['medical_history'] ?? null,
+            'sibling_order'     => $validated['sibling_order'],
+            'total_siblings'    => $validated['total_siblings'],
+            'status'            => $validated['status'] ?? ['Umum'],
+            'tahun_masuk'       => $validated['tahun_masuk'],
+            'guardian_type'     => $validated['guardian_type'],
+            'entry_class_level' => $validated['entry_class_level'] ?? null,
+            'student_status'    => $validated['student_status'] ?? $student->student_status,
+            'updated_by'        => $request->user()->id,
+        ]);
+
+        // Update data orang tua
+        $student->father()?->updateOrCreate(
+            ['student_id' => $student->id, 'type' => 'ayah'],
+            $validated['father']
+        );
+
+        $student->mother()?->updateOrCreate(
+            ['student_id' => $student->id, 'type' => 'ibu'],
+            $validated['mother']
+        );
+
+        // Update/create/delete wali
+        if ($validated['guardian_type'] === 'orang_lain' && !empty($validated['guardian'])) {
+            Guardian::updateOrCreate(
+                ['student_id' => $student->id, 'type' => 'wali'],
+                $validated['guardian']
+            );
+        } else {
+            // Hapus wali jika bukan orang lain
+            Guardian::where('student_id', $student->id)->where('type', 'wali')->delete();
+        }
+
+        // Audit log
+        AuditService::logUpdate($student, $original, $validated);
+
+        return response()->json([
+            'message' => 'Data siswa berhasil diperbarui.',
+            'data'    => $student->fresh(['parents', 'currentEnrollment.classRoom']),
+        ]);
+    }
+
+    /**
+     * DELETE /api/students/{id}
+     *
+     * Soft delete — data siswa diarsipkan, bukan dihapus permanen.
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $student = Student::findOrFail($id);
+        $this->authorize('delete', $student);
+
+        $student->update(['updated_by' => $request->user()->id]);
+        $student->delete();
+
+        AuditService::logDelete($student);
+
+        return response()->json([
+            'message' => 'Data siswa berhasil diarsipkan.',
+        ]);
+    }
+
+    /**
+     * GET /api/students/{id}/adjacent
+     *
+     * Navigasi prev/next siswa — meniru "membalik halaman buku induk".
+     */
+    public function adjacent(Request $request, string $id): JsonResponse
+    {
+        $student = Student::findOrFail($id);
+
+        $prev = Student::where('name', '<', $student->name)
+                        ->orderByDesc('name')
+                        ->select('id', 'name', 'nisn')
+                        ->first();
+
+        $next = Student::where('name', '>', $student->name)
+                        ->orderBy('name')
+                        ->select('id', 'name', 'nisn')
+                        ->first();
+
+        return response()->json([
+            'previous' => $prev,
+            'next'     => $next,
+        ]);
+    }
+
+    /**
+     * GET /api/students/check-duplicate
+     *
+     * Pengecekan NISN/NIK duplikat real-time (debounced dari frontend).
+     */
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $request->validate([
+            'field' => 'required|in:nisn,nik',
+            'value' => 'required|string',
+            'exclude_id' => 'nullable|uuid',
+        ]);
+
+        $query = Student::query();
+
+        if ($request->field === 'nisn') {
+            $query->where('nisn', $request->value);
+        }
+        // NIK — cari di semua record (terenkripsi, perlu loop)
+        // Untuk performa, gunakan NISN untuk cek duplikat via index
+        // NIK dicek saat validasi form submit
+
+        if ($request->filled('exclude_id')) {
+            $query->where('id', '!=', $request->exclude_id);
+        }
+
+        $exists = $query->exists();
+        $existingStudent = $exists ? $query->select('id', 'name', 'nisn')->first() : null;
+
+        return response()->json([
+            'is_duplicate' => $exists,
+            'existing'     => $existingStudent ? [
+                'name' => $existingStudent->name,
+                'nisn' => $existingStudent->nisn,
+            ] : null,
+        ]);
+    }
+
+    /* ----------------------------------------------------------------
+     | Private Helpers
+     | ---------------------------------------------------------------- */
+
+    private function resolveGuardianInfo(Student $student): array
+    {
+        $guardianType = $student->guardian_type;
+
+        if ($guardianType === 'ayah') {
+            $father = $student->parents->firstWhere('type', 'ayah');
+            return [
+                'type'        => 'ayah',
+                'label'       => 'Wali: Ayah Kandung',
+                'name'        => $father?->name,
+                'phone'       => $father?->phone_number,
+                'occupation'  => $father?->occupation,
+            ];
+        }
+
+        if ($guardianType === 'ibu') {
+            $mother = $student->parents->firstWhere('type', 'ibu');
+            return [
+                'type'        => 'ibu',
+                'label'       => 'Wali: Ibu Kandung',
+                'name'        => $mother?->name,
+                'phone'       => $mother?->phone_number,
+                'occupation'  => $mother?->occupation,
+            ];
+        }
+
+        // orang_lain
+        $wali = $student->parents->firstWhere('type', 'wali');
+        return [
+            'type'        => 'orang_lain',
+            'label'       => 'Wali: ' . ($wali?->relationship_description ?? 'Orang Lain'),
+            'name'        => $wali?->name,
+            'phone'       => $wali?->phone_number,
+            'occupation'  => $wali?->occupation,
+            'relationship' => $wali?->relationship_description,
+        ];
+    }
+}
