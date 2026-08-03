@@ -74,10 +74,18 @@ export default function ImportSiswaPage() {
       }
     } catch (error: any) {
       toast.error(error?.message || 'Gagal memproses file.');
+      
+      let errorList = ['File tidak sesuai format template.'];
+      if (error?.errors) {
+          errorList = Object.values(error.errors).flat() as string[];
+      } else if (error?.error) {
+          errorList = [error.error];
+      }
+
       setResult({
         message: error?.message || 'Gagal memproses file.',
         success: 0,
-        errors: error?.errors ? Object.values(error.errors).flat() as string[] : ['File tidak sesuai format template.'],
+        errors: errorList,
       });
     } finally {
       setUploading(false);

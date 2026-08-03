@@ -27,12 +27,15 @@ class ImportController extends Controller
 
         $import = new StudentsImport($request->user());
 
+        \Illuminate\Support\Facades\DB::beginTransaction();
         try {
             Excel::import($import, $request->file('file'));
+            \Illuminate\Support\Facades\DB::commit();
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             return response()->json([
                 'message' => 'Gagal memproses file Excel.',
-                'error'   => config('app.debug') ? $e->getMessage() : 'Format file tidak sesuai template.',
+                'error'   => $e->getMessage(),
             ], 422);
         }
 
