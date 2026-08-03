@@ -22,7 +22,7 @@ class ImportController extends Controller
         $this->authorize('create', \App\Models\Student::class);
 
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:10240', // Maks 10MB
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Maks 10MB
         ]);
 
         $import = new StudentsImport($request->user());
@@ -63,9 +63,36 @@ class ImportController extends Controller
      */
     public function downloadTemplate(): mixed
     {
-        return Excel::download(
-            new \App\Exports\ImportTemplateExport(),
-            'template_import_siswa.xlsx'
-        );
+        try {
+            return Excel::download(
+                new \App\Exports\ImportTemplateExport(),
+                'template_import_siswa.xlsx',
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        } catch (\Exception $e) {
+            // Fallback manual CSV generation if Excel library fails (e.g., autoload issue)
+            $headers = [
+                'nama', 'nisn', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'tahun_masuk',
+                'anak_ke', 'dari_saudara', 'penanggung_jawab', 'nama_ayah', 'pekerjaan_ayah', 'telp_ayah',
+                'nama_ibu', 'pekerjaan_ibu', 'telp_ibu', 'alamat_jalan', 'alamat_rt', 'alamat_rw',
+                'alamat_kelurahan', 'alamat_kecamatan', 'alamat_kabupaten', 'alamat_provinsi', 'alamat_kode_pos'
+            ];
+            
+            $callback = function() use ($headers) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, $headers);
+                fputcsv($file, [
+                    'Ahmad Fadhil', '0012345678', '3201012345670001', 'L', 'Bogor', '2010-05-15', 2024,
+                    2, 3, 'ayah', 'Budi Santoso', 'Wiraswasta', '081234567890',
+                    'Siti Aminah', 'Ibu Rumah Tangga', '081234567891', 'Jl. Merdeka No. 1', '001', '002',
+                    'Ciluar', 'Sukaraja', 'Kab. Bogor', 'Jawa Barat', '16710'
+                ]);
+                fclose($file);
+            };
+
+            return response()->streamDownload($callback, 'template_import_siswa.csv', [
+                'Content-Type' => 'text/csv',
+            ]);
+        }
     }
 }

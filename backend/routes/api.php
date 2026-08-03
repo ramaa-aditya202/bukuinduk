@@ -61,6 +61,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Academic Years — Admin only
     Route::middleware('role:super_admin,admin_tu')->group(function () {
         Route::apiResource('academic-years', AcademicYearController::class);
+        
+        // Users / Teachers lookup
+        Route::get('/users/teachers', function() {
+            return response()->json(['data' => \App\Models\User::whereIn('role', ['guru', 'wali_kelas'])->get(['id', 'name'])]);
+        });
     });
 
     // Classes — Admin only

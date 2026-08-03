@@ -16,6 +16,16 @@ export default function Header() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Export Selesai', desc: 'File Excel data siswa siap diunduh.', time: 'Baru saja', read: false }
+  ]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setTimeout(() => setNotifications([]), 500); // Clear after a moment for effect
+  };
 
   // Generate breadcrumb
   const segments = pathname.split('/').filter(Boolean);
@@ -72,10 +82,12 @@ export default function Header() {
               className="relative p-2 rounded-lg hover:bg-cream-100 transition-colors"
             >
               <Bell className="w-5 h-5 text-stone-500" />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gold-500 rounded-full
-                             text-[10px] text-white flex items-center justify-center font-bold">
-                1
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gold-500 rounded-full
+                               text-[10px] text-white flex items-center justify-center font-bold">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Notification Dropdown */}
@@ -83,17 +95,27 @@ export default function Header() {
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-warm-lg border border-stone-100 overflow-hidden animate-scale-in">
                 <div className="px-4 py-3 border-b border-stone-100 flex justify-between items-center bg-cream-50">
                   <h4 className="font-semibold text-slate-800 text-sm">Notifikasi</h4>
-                  <button className="text-xs text-emerald-700 hover:underline">Tandai semua dibaca</button>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs text-emerald-700 hover:underline">Tandai semua dibaca</button>
+                  )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  <div className="px-4 py-3 border-b border-stone-50 hover:bg-stone-50 cursor-pointer flex gap-3">
-                    <div className="w-2 h-2 mt-1.5 rounded-full bg-gold-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">Export Selesai</p>
-                      <p className="text-xs text-stone-500 mt-0.5">File Excel data siswa siap diunduh.</p>
-                      <p className="text-[10px] text-stone-400 mt-1">Baru saja</p>
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-stone-500 text-sm">
+                      Tidak ada notifikasi
                     </div>
-                  </div>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className={`px-4 py-3 border-b border-stone-50 hover:bg-stone-50 cursor-pointer flex gap-3 ${n.read ? 'opacity-50' : ''}`}>
+                        {!n.read && <div className="w-2 h-2 mt-1.5 rounded-full bg-gold-500 flex-shrink-0" />}
+                        <div>
+                          <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                          <p className="text-xs text-stone-500 mt-0.5">{n.desc}</p>
+                          <p className="text-[10px] text-stone-400 mt-1">{n.time}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="px-4 py-2 text-center border-t border-stone-100 bg-stone-50">
                   <button className="text-xs text-stone-500 hover:text-slate-800">Lihat semua notifikasi</button>

@@ -157,7 +157,7 @@ export default function TambahSiswaPage() {
 
       <Card className="max-w-4xl mx-auto">
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
             <CardContent className="p-6">
               {currentStep === 0 && <StepIdentitas />}
               {currentStep === 1 && <StepKeluarga guardianType={guardianType} />}

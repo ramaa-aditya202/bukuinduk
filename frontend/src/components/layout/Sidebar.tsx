@@ -17,6 +17,7 @@ import {
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin_tu', 'guru', 'wali_kelas'] },
   { href: '/siswa', label: 'Data Siswa', icon: Users, roles: ['super_admin', 'admin_tu', 'guru', 'wali_kelas'] },
+  { href: '/kelas', label: 'Data Kelas', icon: BookOpen, roles: ['super_admin', 'admin_tu', 'guru', 'wali_kelas'] },
   { href: '/siswa/tambah', label: 'Tambah Siswa', icon: UserPlus, roles: ['super_admin', 'admin_tu'] },
   { href: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['super_admin', 'admin_tu'] },
 ];
