@@ -113,6 +113,63 @@ class DocumentController extends Controller
     }
 
     /**
+     * PUT /api/documents/{id}
+     *
+     * Reupload (ganti) dokumen yang sudah ada.
+     * Menghapus file lama dari MinIO dan menggantinya dengan yang baru.
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $document = Document::findOrFail($id);
+
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ]);
+
+        $file = $request->file('file');
+
+        // Hapus file lama dari MinIO
+        if ($document->file_path) {
+            Storage::disk('minio')->delete($document->file_path);
+        }
+
+        // Generate path baru
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = "students/{$document->entity_id}/{$document->doc_type}/{$filename}";
+
+        // Upload file baru ke MinIO
+        Storage::disk('minio')->put($path, file_get_contents($file), 'private');
+
+        // Update metadata
+        $document->update([
+            'original_filename' => $file->getClientOriginalName(),
+            'file_path'         => $path,
+            'mime_type'         => $file->getMimeType(),
+            'file_size'         => $file->getSize(),
+            'uploaded_by'       => $request->user()->id,
+        ]);
+
+        // Jika pas foto, pastikan reference masih benar
+        if ($document->doc_type === 'pas_foto') {
+            Student::where('id', $document->entity_id)
+                   ->update(['photo_document_id' => $document->id]);
+        }
+
+        AuditService::logUpdate($document, [], ['reupload' => true]);
+
+        return response()->json([
+            'message'  => 'Dokumen berhasil diganti.',
+            'document' => [
+                'id'                => $document->id,
+                'doc_type'          => $document->doc_type,
+                'doc_type_label'    => $document->doc_type_label,
+                'original_filename' => $document->original_filename,
+                'signed_url'        => $document->fresh()->signed_url,
+            ],
+        ]);
+    }
+
+    /**
      * GET /api/documents/{id}/preview
      *
      * Generate signed URL untuk preview dokumen.

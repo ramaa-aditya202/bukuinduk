@@ -176,6 +176,15 @@ class StudentController extends Controller
             'student_status'    => $validated['student_status'] ?? 'aktif',
             'created_by'        => $request->user()->id,
             'updated_by'        => $request->user()->id,
+            // Alamat
+            'address_street'      => $validated['address_street'] ?? null,
+            'address_rt'          => $validated['address_rt'] ?? null,
+            'address_rw'          => $validated['address_rw'] ?? null,
+            'address_village'     => $validated['address_village'] ?? null,
+            'address_district'    => $validated['address_district'] ?? null,
+            'address_city'        => $validated['address_city'] ?? null,
+            'address_province'    => $validated['address_province'] ?? null,
+            'address_postal_code' => $validated['address_postal_code'] ?? null,
         ]);
 
         // ── Simpan data Ayah ──
@@ -250,6 +259,15 @@ class StudentController extends Controller
             'entry_class_level' => $validated['entry_class_level'] ?? null,
             'student_status'    => $validated['student_status'] ?? $student->student_status,
             'updated_by'        => $request->user()->id,
+            // Alamat
+            'address_street'      => $validated['address_street'] ?? $student->address_street,
+            'address_rt'          => $validated['address_rt'] ?? $student->address_rt,
+            'address_rw'          => $validated['address_rw'] ?? $student->address_rw,
+            'address_village'     => $validated['address_village'] ?? $student->address_village,
+            'address_district'    => $validated['address_district'] ?? $student->address_district,
+            'address_city'        => $validated['address_city'] ?? $student->address_city,
+            'address_province'    => $validated['address_province'] ?? $student->address_province,
+            'address_postal_code' => $validated['address_postal_code'] ?? $student->address_postal_code,
         ]);
 
         // Update data orang tua

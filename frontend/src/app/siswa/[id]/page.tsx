@@ -7,12 +7,13 @@ import { Card, CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Tabs from '@/components/ui/Tabs';
 import Badge from '@/components/ui/Badge';
+import Select from '@/components/ui/Select';
 import EmptyState from '@/components/ui/EmptyState';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import type { Student, DocumentItem } from '@/types';
+import type { Student, DocumentItem, ClassRoom, AcademicYear } from '@/types';
 import { formatFileSize, maskNik, studentStatusLabel, formatDate } from '@/lib/utils';
-import { ArrowLeft, Printer, FileText, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Edit3, Eye, Trash2, RefreshCw, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import FileDropzone from '@/components/ui/FileDropzone';
 import Modal from '@/components/ui/Modal';
@@ -43,13 +44,22 @@ export default function DetailSiswaPage() {
     if (id) fetchStudent();
   }, [id]);
 
+  // Cetak Buku Induk — direct PDF download
   const handlePrint = async () => {
     setPrinting(true);
     try {
-      const res = await api.post(`/students/${id}/pdf`);
-      toast.success(res.data.message);
-      // Logic polling untuk download file akan ditangani oleh sistem notifikasi di versi real,
-      // Untuk MVP kita beri notifikasi saja.
+      const res = await api.post(`/students/${id}/pdf`, {}, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `buku_induk_${student?.name?.replace(/\s+/g, '_') || 'siswa'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF berhasil diunduh!');
     } catch (error: any) {
       toast.error(error?.message || 'Gagal generate PDF');
     } finally {
@@ -87,6 +97,12 @@ export default function DetailSiswaPage() {
         </div>
         
         <div className="flex items-center gap-2">
+          {hasRole('super_admin', 'admin_tu') && (
+            <Button variant="ghost" onClick={() => router.push(`/siswa/${id}/edit`)}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit Data
+            </Button>
+          )}
           {hasRole('super_admin', 'admin_tu') && (
             <Button variant="secondary" onClick={handlePrint} isLoading={printing}>
               <Printer className="w-4 h-4 mr-2" />
@@ -140,6 +156,11 @@ export default function DetailSiswaPage() {
                   content: <TabIdentitas student={student} canViewSensitive={canViewSensitive} />,
                 },
                 {
+                  id: 'alamat',
+                  label: 'Alamat',
+                  content: <TabAlamat student={student} />,
+                },
+                {
                   id: 'keluarga',
                   label: 'Data Keluarga',
                   content: <TabKeluarga student={student} />,
@@ -147,7 +168,7 @@ export default function DetailSiswaPage() {
                 {
                   id: 'akademik',
                   label: 'Riwayat Akademik',
-                  content: <TabAkademik student={student} />,
+                  content: <TabAkademik student={student} hasRole={hasRole} onRefresh={fetchStudent} />,
                 },
                 {
                   id: 'dokumen',
@@ -196,7 +217,67 @@ function TabIdentitas({ student, canViewSensitive }: { student: Student, canView
   );
 }
 
-// ── Tab 2: Keluarga ──
+// ── Tab 2: Alamat ──
+function TabAlamat({ student }: { student: Student }) {
+  const hasAddress = student.address_street || student.address_village || student.address_city;
+
+  if (!hasAddress) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          title="Alamat Belum Diisi"
+          description="Data alamat tinggal belum tersedia. Silakan isi melalui menu Edit Data."
+          className="py-8"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <MapPin className="w-5 h-5 text-emerald-600" />
+        <h4 className="font-serif font-semibold text-slate-800">Alamat Tinggal</h4>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
+        <div className="sm:col-span-2">
+          <label className="text-xs text-stone-500 block mb-1">Jalan / Perumahan</label>
+          <div className="font-medium text-slate-800">{student.address_street || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">RT</label>
+          <div className="font-medium text-slate-800">{student.address_rt || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">RW</label>
+          <div className="font-medium text-slate-800">{student.address_rw || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Kelurahan / Desa</label>
+          <div className="font-medium text-slate-800">{student.address_village || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Kecamatan</label>
+          <div className="font-medium text-slate-800">{student.address_district || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Kabupaten / Kota</label>
+          <div className="font-medium text-slate-800">{student.address_city || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Provinsi</label>
+          <div className="font-medium text-slate-800">{student.address_province || '-'}</div>
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Kode Pos</label>
+          <div className="font-medium text-slate-800">{student.address_postal_code || '-'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 3: Keluarga ──
 function TabKeluarga({ student }: { student: Student }) {
   return (
     <div className="p-5 space-y-8">
@@ -211,19 +292,29 @@ function TabKeluarga({ student }: { student: Student }) {
         <div>
           <h4 className="font-serif font-semibold text-slate-800 mb-4 border-b border-stone-100 pb-2">Ayah Kandung</h4>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">Nama</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ayah' ? student.guardian_info.name : '-'}</dd>
-            </div>
-            {/* Real implementation would map from student.parents relation, for MVP we use placeholder if missing */}
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">Pekerjaan</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ayah' ? student.guardian_info.occupation : '-'}</dd>
-            </div>
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">No. Telp</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ayah' ? student.guardian_info.phone : '-'}</dd>
-            </div>
+            {(() => {
+              const father = student.parents?.find(p => p.type === 'ayah');
+              return (
+                <>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Nama</dt>
+                    <dd className="font-medium text-slate-800 text-right">{father?.name || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Pekerjaan</dt>
+                    <dd className="font-medium text-slate-800 text-right">{father?.occupation || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">No. Telp</dt>
+                    <dd className="font-medium text-slate-800 text-right">{father?.phone_number || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Pendidikan</dt>
+                    <dd className="font-medium text-slate-800 text-right">{father?.last_education || '-'}</dd>
+                  </div>
+                </>
+              );
+            })()}
           </dl>
         </div>
 
@@ -231,18 +322,29 @@ function TabKeluarga({ student }: { student: Student }) {
         <div>
           <h4 className="font-serif font-semibold text-slate-800 mb-4 border-b border-stone-100 pb-2">Ibu Kandung</h4>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">Nama</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ibu' ? student.guardian_info.name : '-'}</dd>
-            </div>
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">Pekerjaan</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ibu' ? student.guardian_info.occupation : '-'}</dd>
-            </div>
-            <div className="flex justify-between border-b border-stone-50 pb-1">
-              <dt className="text-stone-500">No. Telp</dt>
-              <dd className="font-medium text-slate-800 text-right">{student.guardian_info?.type === 'ibu' ? student.guardian_info.phone : '-'}</dd>
-            </div>
+            {(() => {
+              const mother = student.parents?.find(p => p.type === 'ibu');
+              return (
+                <>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Nama</dt>
+                    <dd className="font-medium text-slate-800 text-right">{mother?.name || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Pekerjaan</dt>
+                    <dd className="font-medium text-slate-800 text-right">{mother?.occupation || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">No. Telp</dt>
+                    <dd className="font-medium text-slate-800 text-right">{mother?.phone_number || '-'}</dd>
+                  </div>
+                  <div className="flex justify-between border-b border-stone-50 pb-1">
+                    <dt className="text-stone-500">Pendidikan</dt>
+                    <dd className="font-medium text-slate-800 text-right">{mother?.last_education || '-'}</dd>
+                  </div>
+                </>
+              );
+            })()}
           </dl>
         </div>
       </div>
@@ -250,38 +352,125 @@ function TabKeluarga({ student }: { student: Student }) {
   );
 }
 
-// ── Tab 3: Riwayat Akademik ──
-function TabAkademik({ student }: { student: Student }) {
-  if (!student.academic_timeline || student.academic_timeline.length === 0) {
-    return <EmptyState title="Belum Ada Riwayat" description="Siswa belum ditempatkan di kelas manapun." className="py-8" />;
-  }
+// ── Tab 4: Riwayat Akademik + Assign Kelas ──
+function TabAkademik({ student, hasRole, onRefresh }: { student: Student, hasRole: any, onRefresh: () => void }) {
+  const [showAssign, setShowAssign] = useState(false);
+  const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [years, setYears] = useState<AcademicYear[]>([]);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchOptions = async () => {
+    try {
+      const [classRes, yearRes] = await Promise.all([
+        api.get('/classes'),
+        api.get('/academic-years'),
+      ]);
+      setClasses(classRes.data.data || classRes.data);
+      setYears(yearRes.data.data || yearRes.data);
+    } catch (e) {
+      console.error('Failed to fetch options', e);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedClass || !selectedYear) {
+      toast.error('Pilih kelas dan tahun ajaran.');
+      return;
+    }
+    setAssigning(true);
+    try {
+      await api.post('/enrollments', {
+        student_id: student.id,
+        class_id: selectedClass,
+        academic_year_id: selectedYear,
+      });
+      toast.success('Siswa berhasil ditempatkan di kelas!');
+      setShowAssign(false);
+      setSelectedClass('');
+      setSelectedYear('');
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error?.message || 'Gagal menempatkan siswa.');
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   return (
     <div className="p-6">
-      <div className="space-y-0">
-        {student.academic_timeline.map((entry, idx) => (
-          <div key={entry.id} className="timeline-item">
-            <div className={`timeline-dot ${idx === 0 ? 'timeline-dot-active' : 'timeline-dot-complete'}`} />
-            <div className="bg-cream-50 rounded-lg p-4 border border-stone-100">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="font-semibold text-slate-800">Kelas {entry.class_name}</h4>
-                  <p className="text-xs text-stone-500">Tahun Ajaran {entry.academic_year}</p>
-                </div>
-                <Badge variant={entry.status ? 'lulus' : 'default'}>{entry.status_label}</Badge>
+      {/* Assign Kelas Button */}
+      {hasRole('super_admin', 'admin_tu') && (
+        <div className="mb-6">
+          {!showAssign ? (
+            <Button variant="primary" size="sm" onClick={() => { setShowAssign(true); fetchOptions(); }}>
+              Tempatkan ke Kelas
+            </Button>
+          ) : (
+            <div className="bg-cream-50 border border-stone-200 rounded-xl p-4 space-y-4 animate-fade-in">
+              <h4 className="font-medium text-slate-800 text-sm">Tempatkan Siswa ke Kelas</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Select
+                  label="Tahun Ajaran"
+                  placeholder="Pilih tahun ajaran"
+                  options={years.map(y => ({ label: y.label, value: y.id }))}
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  required
+                />
+                <Select
+                  label="Kelas"
+                  placeholder="Pilih kelas"
+                  options={classes.map(c => ({ label: `${c.name} (${c.level})`, value: c.id }))}
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="primary" size="sm" onClick={handleAssign} isLoading={assigning}>
+                  Simpan
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowAssign(false)}>
+                  Batal
+                </Button>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
+
+      {/* Timeline */}
+      {!student.academic_timeline || student.academic_timeline.length === 0 ? (
+        <EmptyState title="Belum Ada Riwayat" description="Siswa belum ditempatkan di kelas manapun." className="py-8" />
+      ) : (
+        <div className="space-y-0">
+          {student.academic_timeline.map((entry, idx) => (
+            <div key={entry.id} className="timeline-item">
+              <div className={`timeline-dot ${idx === 0 ? 'timeline-dot-active' : 'timeline-dot-complete'}`} />
+              <div className="bg-cream-50 rounded-lg p-4 border border-stone-100">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h4 className="font-semibold text-slate-800">Kelas {entry.class_name}</h4>
+                    <p className="text-xs text-stone-500">Tahun Ajaran {entry.academic_year}</p>
+                  </div>
+                  <Badge variant={entry.status ? 'lulus' : 'default'}>{entry.status_label}</Badge>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Tab 4: Dokumen ──
+// ── Tab 5: Dokumen (with reupload) ──
 function TabDokumen({ student, onUploadSuccess, hasRole }: { student: Student, onUploadSuccess: () => void, hasRole: any }) {
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+  const [reuploadingDoc, setReuploadingDoc] = useState<string | null>(null);
 
   const requiredDocs = [
     { type: 'pas_foto', label: 'Pas Foto 3x4' },
@@ -289,6 +478,22 @@ function TabDokumen({ student, onUploadSuccess, hasRole }: { student: Student, o
     { type: 'kk', label: 'Kartu Keluarga' },
     { type: 'akta_kelahiran', label: 'Akta Kelahiran' },
   ];
+
+  const handleReupload = async (docId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      await api.post(`/documents/${docId}/reupload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      toast.success('Dokumen berhasil diganti.');
+      setReuploadingDoc(null);
+      onUploadSuccess();
+    } catch (error: any) {
+      toast.error(error?.message || 'Gagal mengganti dokumen.');
+    }
+  };
 
   return (
     <div className="p-5 space-y-6">
@@ -308,12 +513,36 @@ function TabDokumen({ student, onUploadSuccess, hasRole }: { student: Student, o
                   </div>
                 </div>
                 {isComplete && (
-                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setPreviewDoc(doc)}>
-                    <Eye className="w-4 h-4 text-emerald-700" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setPreviewDoc(doc)}>
+                      <Eye className="w-4 h-4 text-emerald-700" />
+                    </Button>
+                    {hasRole('super_admin', 'admin_tu') && (
+                      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setReuploadingDoc(reuploadingDoc === doc.id ? null : doc.id)}>
+                        <RefreshCw className="w-4 h-4 text-amber-600" />
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
 
+              {/* Reupload area */}
+              {hasRole('super_admin', 'admin_tu') && isComplete && reuploadingDoc === doc!.id && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                  <p className="text-xs text-amber-800 mb-2">Ganti dokumen "{doc!.original_filename}"</p>
+                  <FileDropzone
+                    studentId={student.id}
+                    docType={docDef.type}
+                    onSuccess={() => {
+                      // After re-upload via new file, call reupload endpoint
+                      setReuploadingDoc(null);
+                      onUploadSuccess();
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Upload for new */}
               {hasRole('super_admin', 'admin_tu') && !isComplete && (
                 <div className="mt-2">
                   {selectedDoc === docDef.type ? (

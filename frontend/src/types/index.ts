@@ -29,10 +29,20 @@ export interface Student {
   guardian_info?: GuardianInfo;
   academic_timeline?: AcademicTimelineEntry[];
   documents?: DocumentItem[];
+  parents?: Guardian[];
   created_by?: User;
   updated_by?: User;
   created_at?: string;
   updated_at?: string;
+  // Alamat terstruktur
+  address_street?: string | null;
+  address_rt?: string | null;
+  address_rw?: string | null;
+  address_village?: string | null;
+  address_district?: string | null;
+  address_city?: string | null;
+  address_province?: string | null;
+  address_postal_code?: string | null;
 }
 
 export interface Guardian {
@@ -176,6 +186,16 @@ export interface StudentFormData {
   sibling_order: number;
   total_siblings: number;
 
+  // Step 4: Alamat Tinggal
+  address_street?: string;
+  address_rt?: string;
+  address_rw?: string;
+  address_village?: string;
+  address_district?: string;
+  address_city?: string;
+  address_province?: string;
+  address_postal_code?: string;
+
   // Enrollment
   class_id?: string;
   academic_year_id?: string;
@@ -207,4 +227,10 @@ export interface PaginatedResponse<T> {
 export interface ApiError {
   message: string;
   errors?: Record<string, string[]>;
+}
+
+export interface ImportResult {
+  message: string;
+  success: number;
+  errors: string[];
 }

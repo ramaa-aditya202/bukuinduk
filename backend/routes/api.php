@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\ImportController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ProfilePdfController;
 use App\Http\Controllers\Api\StudentController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +34,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
 
+    // Profile — Update nama & password (lokal), blokir SSO
+    Route::put('/profile', [ProfileController::class, 'update']);
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
@@ -46,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/students/{studentId}/documents', [DocumentController::class, 'index']);
     Route::post('/students/{studentId}/documents', [DocumentController::class, 'store']);
     Route::get('/documents/{id}/preview', [DocumentController::class, 'preview']);
+    Route::post('/documents/{id}/reupload', [DocumentController::class, 'update']); // Reupload dokumen
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
 
     // Enrollments
@@ -66,6 +72,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:super_admin,admin_tu')->group(function () {
         Route::post('/export/students', [ExportController::class, 'exportStudents']);
         Route::get('/export/download/{filename}', [ExportController::class, 'download']);
+    });
+
+    // Import — Admin only
+    Route::middleware('role:super_admin,admin_tu')->group(function () {
+        Route::post('/import/students', [ImportController::class, 'importStudents']);
+        Route::get('/import/template', [ImportController::class, 'downloadTemplate']);
     });
 
     // PDF Profile

@@ -9,12 +9,13 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Plus, Search, Filter, Download } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { Student, PaginatedResponse } from '@/types';
 import { debounce } from '@/lib/utils';
 import { studentStatusLabel } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 export default function StudentListPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function StudentListPage() {
   
   const [data, setData] = useState<PaginatedResponse<Student> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   
   // Filters
   const [search, setSearch] = useState('');
@@ -56,6 +58,31 @@ export default function StudentListPage() {
   useEffect(() => {
     debouncedFetch(search, status, page);
   }, [search, status, page, debouncedFetch]);
+
+  // Export handler — direct download
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await api.post('/export/students', {
+        student_status: status || undefined,
+      }, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `buku_induk_export_${new Date().toISOString().slice(0,10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Export berhasil diunduh!');
+    } catch (error: any) {
+      toast.error('Gagal mengeksport data.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Columns definition
   const columns = [
@@ -95,8 +122,14 @@ export default function StudentListPage() {
         </div>
         
         <div className="flex items-center gap-3">
+          {hasRole('super_admin', 'admin_tu') && (
+            <Button variant="secondary" onClick={() => router.push('/siswa/import')}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Excel
+            </Button>
+          )}
           {canExport && (
-            <Button variant="secondary" onClick={() => router.push('/siswa/export')}>
+            <Button variant="secondary" onClick={handleExport} isLoading={exporting}>
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>

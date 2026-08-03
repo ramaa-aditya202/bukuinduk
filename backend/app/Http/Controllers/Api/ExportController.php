@@ -3,21 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ExportStudentsJob;
+use App\Exports\StudentsExport;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ExportController extends Controller
 {
     /**
      * POST /api/export/students
      *
-     * Trigger export Excel sebagai queued job.
-     * User mendapat notifikasi saat file siap diunduh.
+     * Export Excel langsung (sinkron) — file diunduh langsung oleh browser.
+     * Untuk dataset besar (>5000 baris) bisa dipindah ke queued job di masa depan.
      */
-    public function exportStudents(Request $request): JsonResponse
+    public function exportStudents(Request $request)
     {
         $this->authorize('export', \App\Models\Student::class);
 
@@ -31,26 +32,16 @@ class ExportController extends Controller
 
         $filename = 'buku_induk_export_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        // Dispatch ke queue
-        ExportStudentsJob::dispatch(
-            $request->user(),
-            $filters,
-            $filename
-        );
-
         // Audit log
         AuditService::logExport(\App\Models\Student::class, $filters);
 
-        return response()->json([
-            'message'  => 'Export sedang diproses. Anda akan mendapat notifikasi saat file siap diunduh.',
-            'filename' => $filename,
-        ], 202);
+        return Excel::download(new StudentsExport($filters), $filename);
     }
 
     /**
      * GET /api/export/download/{filename}
      *
-     * Download file export yang sudah selesai di-generate.
+     * Download file export yang sudah selesai di-generate (legacy/queued).
      */
     public function download(Request $request, string $filename): mixed
     {

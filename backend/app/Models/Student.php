@@ -30,6 +30,15 @@ class Student extends Model
         'photo_document_id',
         'created_by',
         'updated_by',
+        // Alamat terstruktur
+        'address_street',
+        'address_rt',
+        'address_rw',
+        'address_village',
+        'address_district',
+        'address_city',
+        'address_province',
+        'address_postal_code',
     ];
 
     protected function casts(): array

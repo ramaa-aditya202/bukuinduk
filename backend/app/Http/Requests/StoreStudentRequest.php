@@ -87,6 +87,16 @@ class StoreStudentRequest extends FormRequest
             // ── Enrollment (opsional, bisa diisi saat pertama dibuat) ──
             'class_id'         => ['nullable', 'uuid', 'exists:classes,id'],
             'academic_year_id' => ['nullable', 'uuid', 'exists:academic_years,id'],
+
+            // ── Alamat Tinggal (stepper) ──
+            'address_street'      => ['nullable', 'string', 'max:500'],
+            'address_rt'          => ['nullable', 'string', 'max:5'],
+            'address_rw'          => ['nullable', 'string', 'max:5'],
+            'address_village'     => ['nullable', 'string', 'max:100'],
+            'address_district'    => ['nullable', 'string', 'max:100'],
+            'address_city'        => ['nullable', 'string', 'max:100'],
+            'address_province'    => ['nullable', 'string', 'max:100'],
+            'address_postal_code' => ['nullable', 'string', 'max:10'],
         ];
     }
 

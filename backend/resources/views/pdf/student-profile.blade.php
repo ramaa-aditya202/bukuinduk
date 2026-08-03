@@ -114,6 +114,12 @@
             text-align: center;
             font-size: 8pt;
             color: #999;
+            overflow: hidden;
+        }
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* ── Checklist ── */
@@ -122,12 +128,41 @@
         .checklist li::before { content: '☐ '; }
         .checklist li.complete::before { content: '☑ '; color: #1B4D3E; }
 
+        /* ── Page Break ── */
+        .page-break {
+            page-break-before: always;
+        }
+
+        /* ── Document Image Page ── */
+        .doc-image-container {
+            text-align: center;
+            padding: 10mm 0;
+        }
+        .doc-image-container img {
+            max-width: 100%;
+            max-height: 85%;
+            border: 1px solid #ddd;
+        }
+        .doc-image-label {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1B4D3E;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 2px solid #1B4D3E;
+            padding-bottom: 6px;
+        }
+
         @page {
             margin: 10mm;
         }
     </style>
 </head>
 <body>
+
+    {{-- ═══════════════════════════════════════════════════
+         PAGE 1: Data Tulisan + Foto 3x4
+         ═══════════════════════════════════════════════════ --}}
 
     <!-- Header -->
     <div class="header">
@@ -136,7 +171,11 @@
     </div>
 
     <div class="photo-box">
-        Pas Foto<br>3×4
+        @if(!empty($photoBase64))
+            <img src="{{ $photoBase64 }}" alt="Foto {{ $student->name }}">
+        @else
+            Pas Foto<br>3×4
+        @endif
     </div>
 
     <!-- Section: Identitas Diri -->
@@ -182,6 +221,41 @@
             <tr>
                 <td class="label">Riwayat Penyakit</td>
                 <td>{{ $student->medical_history ?? '-' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Section: Alamat Tinggal -->
+    <div class="section">
+        <div class="section-title">A2. Alamat Tinggal</div>
+        <table class="data-table">
+            <tr>
+                <td class="label">Jalan / Perumahan</td>
+                <td>{{ $student->address_street ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">RT / RW</td>
+                <td>{{ $student->address_rt ?? '-' }} / {{ $student->address_rw ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Kelurahan / Desa</td>
+                <td>{{ $student->address_village ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Kecamatan</td>
+                <td>{{ $student->address_district ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Kabupaten / Kota</td>
+                <td>{{ $student->address_city ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Provinsi</td>
+                <td>{{ $student->address_province ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Kode Pos</td>
+                <td>{{ $student->address_postal_code ?? '-' }}</td>
             </tr>
         </table>
     </div>
@@ -279,6 +353,24 @@
         <p>_________________________________</p>
         <p>Kepala Sekolah / Tata Usaha</p>
     </div>
+
+    {{-- ═══════════════════════════════════════════════════
+         PAGE 2+: Dokumen Gambar (masing-masing satu halaman)
+         ═══════════════════════════════════════════════════ --}}
+    @if(isset($imageDocuments) && $imageDocuments->count() > 0)
+        @foreach($imageDocuments as $imgDoc)
+        <div class="page-break"></div>
+        <div class="doc-image-container">
+            <div class="doc-image-label">
+                {{ $imgDoc->doc_type_label }} — {{ $student->name }}
+            </div>
+            <img src="{{ $imgDoc->image_base64 }}" alt="{{ $imgDoc->doc_type_label }}">
+            <p style="margin-top: 8px; font-size: 9pt; color: #999;">
+                File asli: {{ $imgDoc->original_filename }}
+            </p>
+        </div>
+        @endforeach
+    @endif
 
 </body>
 </html>
