@@ -43,8 +43,7 @@ class ImportController extends Controller
         $errors = $import->getErrors();
 
         // Audit log
-        AuditService::logCreate(new \App\Models\Student(), [
-            'action'  => 'bulk_import',
+        AuditService::logImport(\App\Models\Student::class, [
             'success' => $successCount,
             'errors'  => count($errors),
         ]);
