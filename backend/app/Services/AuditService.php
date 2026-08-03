@@ -73,8 +73,8 @@ class AuditService
             'user_id'     => Auth::id(),
             'entity_type' => $entityType,
             'entity_id'   => '00000000-0000-0000-0000-000000000000', // Placeholder untuk bulk
-            'action'      => 'import',
-            'changes'     => $stats,
+            'action'      => 'create', // Enum hanya mendukung: create, update, delete, export, view_sensitive
+            'changes'     => array_merge(['type' => 'bulk_import'], $stats),
             'ip_address'  => Request::ip(),
             'user_agent'  => Request::userAgent(),
         ]);
