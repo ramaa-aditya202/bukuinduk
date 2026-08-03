@@ -35,10 +35,7 @@ return new class extends Migration
             $table->string('entry_class_level')->nullable(); // Masuk di kelas berapa
             $table->enum('student_status', ['aktif', 'lulus', 'pindah', 'keluar', 'nonaktif'])
                   ->default('aktif');
-            $table->foreignUuid('photo_document_id')
-                  ->nullable()
-                  ->references('id')->on('documents')
-                  ->nullOnDelete(); // Akan dibuat setelah tabel documents, dihandle via separate migration jika perlu
+            $table->uuid('photo_document_id')->nullable(); // Foreign key dihandle di migration documents
 
             // Audit trail
             $table->foreignUuid('created_by')
