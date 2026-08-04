@@ -173,7 +173,7 @@ class DocumentController extends Controller
     /**
      * GET /api/documents/{id}/preview
      *
-     * Mengembalikan URL proxy backend untuk preview dokumen.
+     * Mengembalikan signed URL backend untuk preview dokumen.
      * Dokumen sensitif dicatat ke activity_logs.
      */
     public function preview(Request $request, string $id): JsonResponse
@@ -186,7 +186,7 @@ class DocumentController extends Controller
         }
 
         return response()->json([
-            'signed_url' => $document->proxy_url,
+            'signed_url' => $document->signed_url,
             'filename'   => $document->original_filename,
             'mime_type'  => $document->mime_type,
         ]);

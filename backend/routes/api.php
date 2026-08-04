@@ -20,6 +20,13 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// ── Document Serve (Public dengan Signed URL) ──────────────────────────
+// Bisa diakses langsung oleh browser (<img>, <iframe>, <a href>).
+// Keamanan dijamin HMAC signature Laravel + expiry 15 menit.
+Route::get('/documents/{id}/serve', [DocumentController::class, 'serve'])
+    ->middleware('signed')
+    ->name('documents.serve');
+
 // ── Auth (Public) ──────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -51,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/students/{studentId}/documents', [DocumentController::class, 'index']);
     Route::post('/students/{studentId}/documents', [DocumentController::class, 'store']);
     Route::get('/documents/{id}/preview', [DocumentController::class, 'preview']);
-    Route::get('/documents/{id}/serve', [DocumentController::class, 'serve']);   // Proxy stream file dari MinIO
+    // GET /documents/{id}/serve ada di luar group ini (public signed URL)
     Route::post('/documents/{id}/reupload', [DocumentController::class, 'update']); // Reupload dokumen
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
 
