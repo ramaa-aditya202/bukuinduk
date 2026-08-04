@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Document extends Model
 {
@@ -66,25 +65,28 @@ class Document extends Model
      | ---------------------------------------------------------------- */
 
     /**
-     * Generate temporary signed URL untuk akses dokumen.
-     * URL kedaluwarsa sesuai konfigurasi (default 15 menit).
+     * Generate URL proxy backend untuk akses dokumen.
+     * URL mengarah ke endpoint /api/documents/{id}/serve di backend,
+     * sehingga MinIO tidak perlu diekspos ke internet.
+     *
+     * @deprecated Gunakan proxy_url. Dipertahankan untuk kompatibilitas response JSON.
      */
     public function getSignedUrlAttribute(): ?string
+    {
+        return $this->getProxyUrlAttribute();
+    }
+
+    /**
+     * URL proxy backend untuk akses dokumen.
+     * Backend men-stream file dari MinIO ke client secara transparan.
+     */
+    public function getProxyUrlAttribute(): ?string
     {
         if (empty($this->file_path)) {
             return null;
         }
 
-        $expiryMinutes = config('app.signed_url_expiry_minutes', 15);
-
-        try {
-            return Storage::disk('minio')->temporaryUrl(
-                $this->file_path,
-                now()->addMinutes($expiryMinutes)
-            );
-        } catch (\Exception $e) {
-            return null;
-        }
+        return url("/api/documents/{$this->id}/serve");
     }
 
     /* ----------------------------------------------------------------

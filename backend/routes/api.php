@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/students/{studentId}/documents', [DocumentController::class, 'index']);
     Route::post('/students/{studentId}/documents', [DocumentController::class, 'store']);
     Route::get('/documents/{id}/preview', [DocumentController::class, 'preview']);
+    Route::get('/documents/{id}/serve', [DocumentController::class, 'serve']);   // Proxy stream file dari MinIO
     Route::post('/documents/{id}/reupload', [DocumentController::class, 'update']); // Reupload dokumen
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
 

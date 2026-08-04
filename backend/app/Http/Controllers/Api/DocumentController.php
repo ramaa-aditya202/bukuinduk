@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
@@ -172,7 +173,7 @@ class DocumentController extends Controller
     /**
      * GET /api/documents/{id}/preview
      *
-     * Generate signed URL untuk preview dokumen.
+     * Mengembalikan URL proxy backend untuk preview dokumen.
      * Dokumen sensitif dicatat ke activity_logs.
      */
     public function preview(Request $request, string $id): JsonResponse
@@ -185,9 +186,53 @@ class DocumentController extends Controller
         }
 
         return response()->json([
-            'signed_url' => $document->signed_url,
+            'signed_url' => $document->proxy_url,
             'filename'   => $document->original_filename,
-            'mime_type'   => $document->mime_type,
+            'mime_type'  => $document->mime_type,
+        ]);
+    }
+
+    /**
+     * GET /api/documents/{id}/serve
+     *
+     * Proxy/stream file dari MinIO ke client.
+     * MinIO tidak perlu diekspos ke internet — semua akses melalui backend.
+     * File di-stream langsung, tidak ada redirect ke URL MinIO.
+     */
+    public function serve(Request $request, string $id): StreamedResponse
+    {
+        $document = Document::findOrFail($id);
+
+        // Log akses dokumen sensitif
+        if ($document->isSensitive()) {
+            AuditService::logSensitiveAccess($document, $document->doc_type);
+        }
+
+        abort_if(empty($document->file_path), 404, 'File tidak ditemukan.');
+
+        $disk = Storage::disk('minio');
+
+        abort_unless($disk->exists($document->file_path), 404, 'File tidak ditemukan di storage.');
+
+        $mimeType = $document->mime_type ?: 'application/octet-stream';
+        $filename  = $document->original_filename;
+
+        // Tentukan apakah file bisa ditampilkan inline di browser
+        $inlineTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $disposition = in_array($mimeType, $inlineTypes) ? 'inline' : 'attachment';
+
+        return response()->stream(function () use ($disk, $document) {
+            $stream = $disk->readStream($document->file_path);
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type'              => $mimeType,
+            'Content-Disposition'       => $disposition . '; filename="' . addslashes($filename) . '"',
+            'Content-Length'            => $disk->size($document->file_path),
+            'Cache-Control'             => 'private, no-store',
+            'X-Content-Type-Options'    => 'nosniff',
         ]);
     }
 
