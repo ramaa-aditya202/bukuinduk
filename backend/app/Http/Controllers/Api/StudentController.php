@@ -46,6 +46,11 @@ class StudentController extends Controller
             $query->where('student_status', $request->student_status);
         }
 
+        // Filter status khusus (JSONB array: Umum, Yatim, Dhu'afa, Piatu)
+        if ($request->filled('special_status')) {
+            $query->whereJsonContains('status', $request->special_status);
+        }
+
         // Filter gender
         if ($request->filled('gender')) {
             $query->where('gender', $request->gender);

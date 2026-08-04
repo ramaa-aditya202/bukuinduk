@@ -22,6 +22,9 @@ class RekapUtamaSheet implements FromQuery, WithTitle, WithHeadings, WithMapping
     {
         $query = Student::with(['currentEnrollment.classRoom', 'currentEnrollment.academicYear']);
 
+        if (!empty($this->filters['tahun_masuk'])) {
+            $query->where('tahun_masuk', $this->filters['tahun_masuk']);
+        }
         if (!empty($this->filters['tahun_masuk_from'])) {
             $query->where('tahun_masuk', '>=', $this->filters['tahun_masuk_from']);
         }
@@ -30,6 +33,12 @@ class RekapUtamaSheet implements FromQuery, WithTitle, WithHeadings, WithMapping
         }
         if (!empty($this->filters['student_status'])) {
             $query->where('student_status', $this->filters['student_status']);
+        }
+        if (!empty($this->filters['special_status'])) {
+            $query->whereJsonContains('status', $this->filters['special_status']);
+        }
+        if (!empty($this->filters['class_id'])) {
+            $query->whereHas('currentEnrollment', fn($q) => $q->where('class_id', $this->filters['class_id']));
         }
 
         return $query->orderBy('name');
