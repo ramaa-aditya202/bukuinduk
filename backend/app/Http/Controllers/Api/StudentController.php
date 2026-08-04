@@ -36,20 +36,20 @@ class StudentController extends Controller
             $query->search($request->search);
         }
 
-        // Filter tahun masuk — single atau array
-        $tahunMasuk = array_filter((array) $request->input('tahun_masuk', $request->input('tahun_masuk[]', [])));
+        // Filter tahun masuk — Laravel parse tahun_masuk[]=2023&tahun_masuk[]=2024 → array otomatis
+        $tahunMasuk = array_filter((array) ($request->input('tahun_masuk') ?? []));
         if (!empty($tahunMasuk)) {
             $query->whereIn('tahun_masuk', array_map('intval', $tahunMasuk));
         }
 
-        // Filter student_status — single atau array
-        $studentStatuses = array_filter((array) $request->input('student_status', $request->input('student_status[]', [])));
+        // Filter student_status — array: student_status[]=aktif&student_status[]=lulus
+        $studentStatuses = array_filter((array) ($request->input('student_status') ?? []));
         if (!empty($studentStatuses)) {
             $query->whereIn('student_status', $studentStatuses);
         }
 
-        // Filter status khusus (JSONB array) — OR logic jika multiple
-        $specialStatuses = array_filter((array) $request->input('special_status', $request->input('special_status[]', [])));
+        // Filter status khusus (JSONB array) — OR logic: siswa yatim ATAU dhu'afa ATAU keduanya
+        $specialStatuses = array_filter((array) ($request->input('special_status') ?? []));
         if (!empty($specialStatuses)) {
             $query->where(function ($q) use ($specialStatuses) {
                 foreach ($specialStatuses as $s) {
@@ -63,8 +63,8 @@ class StudentController extends Controller
             $query->where('gender', $request->gender);
         }
 
-        // Filter kelas — single atau array
-        $classIds = array_filter((array) $request->input('class_id', $request->input('class_id[]', [])));
+        // Filter kelas — array: class_id[]=uuid1&class_id[]=uuid2
+        $classIds = array_filter((array) ($request->input('class_id') ?? []));
         if (!empty($classIds)) {
             $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
                 $q->whereIn('class_id', $classIds);

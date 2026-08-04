@@ -35,7 +35,7 @@ trait AppliesStudentFilters
             $query->whereIn('student_status', $statuses);
         }
 
-        // Filter status khusus JSONB (array → OR whereJsonContains)
+        // Filter status khusus JSONB — OR: yatim ATAU dhu'afa ATAU keduanya
         $specialStatuses = array_filter((array) ($filters['special_status'] ?? []));
         if (!empty($specialStatuses)) {
             $query->where(function ($q) use ($specialStatuses) {

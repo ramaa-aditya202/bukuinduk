@@ -70,16 +70,26 @@ export default function StudentListPage() {
         const res = await api.get('/students', {
           params: {
             search: searchQuery || undefined,
-            // Send arrays as repeated params: student_status[]=aktif&student_status[]=lulus
-            'student_status[]': statusFilters.length ? statusFilters : undefined,
-            'class_id[]': classFilters.length ? classFilters : undefined,
-            'tahun_masuk[]': tahunFilters.length ? tahunFilters : undefined,
-            'special_status[]': specialStatusFilters.length ? specialStatusFilters : undefined,
+            student_status: statusFilters.length ? statusFilters : undefined,
+            class_id: classFilters.length ? classFilters : undefined,
+            tahun_masuk: tahunFilters.length ? tahunFilters : undefined,
+            special_status: specialStatusFilters.length ? specialStatusFilters : undefined,
             page: pageNum,
             per_page: 15,
           },
-          // Axios serializes arrays correctly as repeated query params
-          paramsSerializer: { indexes: null },
+          // Custom serializer: array → key[]=val1&key[]=val2 (format yang Laravel parse sebagai array)
+          paramsSerializer: (params) => {
+            const parts: string[] = [];
+            Object.entries(params).forEach(([key, val]) => {
+              if (val === undefined || val === null) return;
+              if (Array.isArray(val)) {
+                val.forEach((v) => parts.push(`${key}[]=${encodeURIComponent(String(v))}`))
+              } else {
+                parts.push(`${key}=${encodeURIComponent(String(val))}`);
+              }
+            });
+            return parts.join('&');
+          },
         });
         setData(res.data);
       } catch (error) {
