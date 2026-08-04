@@ -82,7 +82,7 @@ class AuthController extends Controller
      * Callback dari Authentik setelah user berhasil login.
      * Exchange code → token → user info → JIT provisioning → Sanctum token.
      */
-    public function authentikCallback(Request $request): JsonResponse
+    public function authentikCallback(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'code'  => 'required|string',
