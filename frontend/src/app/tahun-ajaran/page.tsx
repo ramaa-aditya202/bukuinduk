@@ -73,7 +73,7 @@ export default function TahunAjaranPage() {
       toast.success('Tahun ajaran berhasil dihapus');
       fetchYears();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal menghapus tahun ajaran');
+      toast.error(error?.response?.data?.message || error?.message || 'Gagal menghapus tahun ajaran');
     }
   };
 
@@ -95,7 +95,7 @@ export default function TahunAjaranPage() {
       setIsModalOpen(false);
       fetchYears();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Terjadi kesalahan saat menyimpan');
+      toast.error(error?.response?.data?.message || error?.message || 'Terjadi kesalahan saat menyimpan');
     } finally {
       setSubmitting(false);
     }

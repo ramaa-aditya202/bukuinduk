@@ -84,7 +84,7 @@ export default function KelasPage() {
       toast.success('Kelas berhasil dihapus');
       fetchClasses();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal menghapus kelas');
+      toast.error(error?.response?.data?.message || error?.message || 'Gagal menghapus kelas');
     }
   };
 
@@ -107,7 +107,7 @@ export default function KelasPage() {
       setIsModalOpen(false);
       fetchClasses();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Terjadi kesalahan saat menyimpan');
+      toast.error(error?.response?.data?.message || error?.message || 'Terjadi kesalahan saat menyimpan');
     } finally {
       setSubmitting(false);
     }

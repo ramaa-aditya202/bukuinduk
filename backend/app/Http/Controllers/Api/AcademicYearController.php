@@ -63,11 +63,8 @@ class AcademicYearController extends Controller
     {
         $year = AcademicYear::findOrFail($id);
 
-        if ($year->enrollments()->exists()) {
-            return response()->json([
-                'message' => 'Tahun ajaran tidak dapat dihapus karena sudah memiliki data enrollment.',
-            ], 422);
-        }
+        // Hapus data enrollment terkait secara paksa
+        $year->enrollments()->delete();
 
         $year->delete();
 

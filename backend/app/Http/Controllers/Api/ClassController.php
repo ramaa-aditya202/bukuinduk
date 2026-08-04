@@ -59,13 +59,10 @@ class ClassController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $class = ClassRoom::findOrFail($id);
-
-        if ($class->enrollments()->exists()) {
-            return response()->json([
-                'message' => 'Kelas tidak dapat dihapus karena sudah memiliki data siswa.',
-            ], 422);
-        }
-
+        
+        // Hapus data enrollment terkait secara paksa
+        $class->enrollments()->delete();
+        
         $class->delete();
 
         return response()->json(['message' => 'Kelas berhasil dihapus.']);
