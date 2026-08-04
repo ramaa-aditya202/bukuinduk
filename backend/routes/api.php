@@ -23,8 +23,8 @@ use Illuminate\Support\Facades\Route;
 // ── Auth (Public) ──────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/authentik/redirect', [AuthController::class, 'authentikRedirect']);
-    Route::get('/authentik/callback', [AuthController::class, 'authentikCallback']);
+    Route::get('/authentik/redirect', [AuthController::class, 'authentikRedirect'])->middleware('web');
+    Route::get('/authentik/callback', [AuthController::class, 'authentikCallback'])->middleware('web');
 });
 
 // ── Protected Routes (Sanctum) ────────────────────────────────────────
