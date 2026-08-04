@@ -53,7 +53,7 @@ class RekapUtamaSheet implements FromQuery, WithTitle, WithHeadings, WithMapping
             $no,
             $student->name,
             $student->nisn,
-            $student->masked_nik, // Selalu masking di export
+            $student->nik, // Tampilkan NIK asli untuk admin
             $student->gender,
             $student->birth_place,
             $student->birth_date?->format('d/m/Y'),
