@@ -116,17 +116,16 @@ class AuthController extends Controller
             // Hapus state dari session
             session()->forget('authentik_state');
 
-            return response()->json([
-                'message' => 'SSO Login berhasil.',
-                'token'   => $token,
-                'user'    => [
-                    'id'     => $user->id,
-                    'name'   => $user->name,
-                    'email'  => $user->email,
-                    'role'   => $user->role,
-                    'avatar' => $user->avatar_url,
-                ],
-            ]);
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $userData = base64_encode(json_encode([
+                'id'     => $user->id,
+                'name'   => $user->name,
+                'email'  => $user->email,
+                'role'   => $user->role,
+                'avatar' => $user->avatar_url,
+            ]));
+
+            return redirect()->away("{$frontendUrl}/login?token={$token}&user={$userData}");
 
         } catch (\Exception $e) {
             return response()->json([

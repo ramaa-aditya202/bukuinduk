@@ -26,6 +26,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cek auth state saat mount
   useEffect(() => {
+    // Handle SSO Callback (token and user from URL)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      const urlUser = params.get('user');
+
+      if (urlToken && urlUser) {
+        try {
+          const decodedUser = JSON.parse(atob(urlUser));
+          localStorage.setItem('auth_token', urlToken);
+          localStorage.setItem('user', JSON.stringify(decodedUser));
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          setUser(decodedUser);
+          setLoading(false);
+          router.push('/dashboard');
+          return;
+        } catch (e) {
+          console.error('Failed to parse SSO data:', e);
+        }
+      }
+    }
+
     const token = localStorage.getItem('auth_token');
     const savedUser = localStorage.getItem('user');
 
@@ -51,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   // Login lokal (email + password)
   const login = async (email: string, password: string) => {
