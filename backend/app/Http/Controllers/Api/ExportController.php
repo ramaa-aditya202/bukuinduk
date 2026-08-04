@@ -23,13 +23,17 @@ class ExportController extends Controller
         $this->authorize('export', \App\Models\Student::class);
 
         $filters = $request->validate([
-            'tahun_masuk'      => 'nullable|integer|min:2000',
-            'tahun_masuk_from' => 'nullable|integer|min:2000',
-            'tahun_masuk_to'   => 'nullable|integer|min:2000',
-            'student_status'   => 'nullable|in:aktif,lulus,pindah,keluar,nonaktif',
-            'special_status'   => 'nullable|string|in:Umum,Yatim,Dhu\'afa,Piatu',
-            'class_id'         => 'nullable|uuid|exists:classes,id',
-            'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
+            'tahun_masuk'        => 'nullable|array',
+            'tahun_masuk.*'      => 'integer|min:2000',
+            'tahun_masuk_from'   => 'nullable|integer|min:2000',
+            'tahun_masuk_to'     => 'nullable|integer|min:2000',
+            'student_status'     => 'nullable|array',
+            'student_status.*'   => 'in:aktif,lulus,pindah,keluar,nonaktif',
+            'special_status'     => 'nullable|array',
+            'special_status.*'   => 'string|in:Umum,Yatim,Dhu\'afa,Piatu',
+            'class_id'           => 'nullable|array',
+            'class_id.*'         => 'uuid|exists:classes,id',
+            'academic_year_id'   => 'nullable|uuid|exists:academic_years,id',
         ]);
 
         $filename = 'buku_induk_export_' . now()->format('Y-m-d_His') . '.xlsx';

@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
+import MultiSelect from '@/components/ui/MultiSelect';
 import Badge from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Plus, Search, Download, Upload } from 'lucide-react';
@@ -17,8 +17,15 @@ import { debounce, generateTahunMasukOptions } from '@/lib/utils';
 import { studentStatusLabel } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+const STATUS_OPTIONS = [
+  { label: 'Aktif', value: 'aktif' },
+  { label: 'Lulus', value: 'lulus' },
+  { label: 'Pindah', value: 'pindah' },
+  { label: 'Keluar', value: 'keluar' },
+  { label: 'Nonaktif', value: 'nonaktif' },
+];
+
 const SPECIAL_STATUS_OPTIONS = [
-  { label: 'Semua Status Khusus', value: '' },
   { label: 'Umum', value: 'Umum' },
   { label: 'Yatim', value: 'Yatim' },
   { label: "Dhu'afa", value: "Dhu'afa" },
@@ -34,12 +41,12 @@ export default function StudentListPage() {
   const [exporting, setExporting] = useState(false);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
 
-  // Filters
+  // Filters — all multi-select (arrays)
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [classId, setClassId] = useState('');
-  const [tahunMasuk, setTahunMasuk] = useState('');
-  const [specialStatus, setSpecialStatus] = useState('');
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [classIds, setClassIds] = useState<string[]>([]);
+  const [tahunMasukList, setTahunMasukList] = useState<string[]>([]);
+  const [specialStatuses, setSpecialStatuses] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
   // Fetch kelas list on mount
@@ -52,10 +59,10 @@ export default function StudentListPage() {
   const fetchStudents = useCallback(
     async (
       searchQuery: string,
-      statusFilter: string,
-      classFilter: string,
-      tahunFilter: string,
-      specialStatusFilter: string,
+      statusFilters: string[],
+      classFilters: string[],
+      tahunFilters: string[],
+      specialStatusFilters: string[],
       pageNum: number,
     ) => {
       setLoading(true);
@@ -63,13 +70,16 @@ export default function StudentListPage() {
         const res = await api.get('/students', {
           params: {
             search: searchQuery || undefined,
-            student_status: statusFilter || undefined,
-            class_id: classFilter || undefined,
-            tahun_masuk: tahunFilter || undefined,
-            special_status: specialStatusFilter || undefined,
+            // Send arrays as repeated params: student_status[]=aktif&student_status[]=lulus
+            'student_status[]': statusFilters.length ? statusFilters : undefined,
+            'class_id[]': classFilters.length ? classFilters : undefined,
+            'tahun_masuk[]': tahunFilters.length ? tahunFilters : undefined,
+            'special_status[]': specialStatusFilters.length ? specialStatusFilters : undefined,
             page: pageNum,
             per_page: 15,
           },
+          // Axios serializes arrays correctly as repeated query params
+          paramsSerializer: { indexes: null },
         });
         setData(res.data);
       } catch (error) {
@@ -81,33 +91,48 @@ export default function StudentListPage() {
     [],
   );
 
-  // Debounced search
   const debouncedFetch = useCallback(
     debounce(
-      (s: string, st: string, cl: string, tm: string, ss: string, p: number) =>
-        fetchStudents(s, st, cl, tm, ss, p),
-      500,
+      (
+        s: string,
+        st: string[],
+        cl: string[],
+        tm: string[],
+        ss: string[],
+        p: number,
+      ) => fetchStudents(s, st, cl, tm, ss, p),
+      400,
     ),
     [fetchStudents],
   );
 
   useEffect(() => {
-    debouncedFetch(search, status, classId, tahunMasuk, specialStatus, page);
-  }, [search, status, classId, tahunMasuk, specialStatus, page, debouncedFetch]);
+    debouncedFetch(search, statuses, classIds, tahunMasukList, specialStatuses, page);
+  }, [search, statuses, classIds, tahunMasukList, specialStatuses, page, debouncedFetch]);
 
   const resetPage = () => setPage(1);
 
-  // Export handler — direct download, carries all active filters
+  const activeFilterCount = statuses.length + classIds.length + tahunMasukList.length + specialStatuses.length;
+
+  const resetAllFilters = () => {
+    setStatuses([]);
+    setClassIds([]);
+    setTahunMasukList([]);
+    setSpecialStatuses([]);
+    resetPage();
+  };
+
+  // Export — passes all active filters as arrays
   const handleExport = async () => {
     setExporting(true);
     try {
       const res = await api.post(
         '/export/students',
         {
-          student_status: status || undefined,
-          class_id: classId || undefined,
-          tahun_masuk: tahunMasuk ? Number(tahunMasuk) : undefined,
-          special_status: specialStatus || undefined,
+          student_status: statuses.length ? statuses : undefined,
+          class_id: classIds.length ? classIds : undefined,
+          tahun_masuk: tahunMasukList.length ? tahunMasukList.map(Number) : undefined,
+          special_status: specialStatuses.length ? specialStatuses : undefined,
         },
         { responseType: 'blob' },
       );
@@ -130,7 +155,6 @@ export default function StudentListPage() {
     }
   };
 
-  // Columns definition
   const columns = [
     {
       header: 'Nama Siswa',
@@ -166,26 +190,16 @@ export default function StudentListPage() {
     },
   ];
 
-  // Build tahun masuk options
-  const tahunMasukOptions = [
-    { label: 'Semua Angkatan', value: '' },
-    ...generateTahunMasukOptions(2015).map((o) => ({
-      label: String(o.label),
-      value: String(o.value),
-    })),
-  ];
+  const tahunMasukOptions = generateTahunMasukOptions(2015).map((o) => ({
+    label: String(o.label),
+    value: String(o.value),
+  }));
 
-  // Build kelas options
-  const classOptions = [
-    { label: 'Semua Kelas', value: '' },
-    ...classes.map((c) => ({ label: c.name, value: c.id })),
-  ];
-
-  // Count active filters (excluding search)
-  const activeFilterCount = [status, classId, tahunMasuk, specialStatus].filter(Boolean).length;
+  const classOptions = classes.map((c) => ({ label: c.name, value: c.id }));
 
   return (
     <DashboardLayout>
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-serif font-bold text-slate-800">Data Siswa</h1>
@@ -204,7 +218,7 @@ export default function StudentListPage() {
               <Download className="w-4 h-4 mr-2" />
               Export
               {activeFilterCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-xs font-bold">
+                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-xs font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -225,79 +239,60 @@ export default function StudentListPage() {
         </div>
       </div>
 
+      {/* Filter Card */}
       <Card className="mb-6">
-        <CardContent className="p-4">
-          {/* Row 1: Search */}
-          <div className="mb-3">
-            <Input
-              placeholder="Cari nama atau NISN..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                resetPage();
-              }}
-              rightElement={<Search className="w-4 h-4" />}
-            />
-          </div>
+        <CardContent className="p-4 space-y-3">
+          {/* Search */}
+          <Input
+            placeholder="Cari nama atau NISN..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              resetPage();
+            }}
+            rightElement={<Search className="w-4 h-4" />}
+          />
 
-          {/* Row 2: Filters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Select
+          {/* Multi-select filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <MultiSelect
+              placeholder="Semua Kelas"
               options={classOptions}
-              value={classId}
-              onChange={(e) => {
-                setClassId(e.target.value);
-                resetPage();
-              }}
+              value={classIds}
+              onChange={(v) => { setClassIds(v); resetPage(); }}
             />
-            <Select
+            <MultiSelect
+              placeholder="Semua Angkatan"
               options={tahunMasukOptions}
-              value={tahunMasuk}
-              onChange={(e) => {
-                setTahunMasuk(e.target.value);
-                resetPage();
-              }}
+              value={tahunMasukList}
+              onChange={(v) => { setTahunMasukList(v); resetPage(); }}
             />
-            <Select
-              options={[
-                { label: 'Semua Status', value: '' },
-                { label: 'Aktif', value: 'aktif' },
-                { label: 'Lulus', value: 'lulus' },
-                { label: 'Pindah', value: 'pindah' },
-                { label: 'Keluar', value: 'keluar' },
-                { label: 'Nonaktif', value: 'nonaktif' },
-              ]}
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                resetPage();
-              }}
+            <MultiSelect
+              placeholder="Semua Status"
+              options={STATUS_OPTIONS}
+              value={statuses}
+              onChange={(v) => { setStatuses(v); resetPage(); }}
             />
-            <Select
+            <MultiSelect
+              placeholder="Semua Status Khusus"
               options={SPECIAL_STATUS_OPTIONS}
-              value={specialStatus}
-              onChange={(e) => {
-                setSpecialStatus(e.target.value);
-                resetPage();
-              }}
+              value={specialStatuses}
+              onChange={(v) => { setSpecialStatuses(v); resetPage(); }}
             />
           </div>
 
-          {/* Reset filters */}
+          {/* Active filter summary + reset */}
           {activeFilterCount > 0 && (
-            <div className="mt-3 flex justify-end">
+            <div className="flex items-center justify-between pt-1 border-t border-stone-100">
+              <p className="text-xs text-stone-500">
+                {activeFilterCount} filter aktif • {data?.total ?? '...'} siswa ditemukan
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  setStatus('');
-                  setClassId('');
-                  setTahunMasuk('');
-                  setSpecialStatus('');
-                  resetPage();
-                }}
-                className="text-sm text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2"
+                onClick={resetAllFilters}
+                className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2"
               >
-                Reset filter ({activeFilterCount})
+                Reset semua filter
               </button>
             </div>
           )}

@@ -36,19 +36,26 @@ class StudentController extends Controller
             $query->search($request->search);
         }
 
-        // Filter tahun masuk
-        if ($request->filled('tahun_masuk')) {
-            $query->byTahunMasuk((int) $request->tahun_masuk);
+        // Filter tahun masuk — single atau array
+        $tahunMasuk = array_filter((array) $request->input('tahun_masuk', $request->input('tahun_masuk[]', [])));
+        if (!empty($tahunMasuk)) {
+            $query->whereIn('tahun_masuk', array_map('intval', $tahunMasuk));
         }
 
-        // Filter status
-        if ($request->filled('student_status')) {
-            $query->where('student_status', $request->student_status);
+        // Filter student_status — single atau array
+        $studentStatuses = array_filter((array) $request->input('student_status', $request->input('student_status[]', [])));
+        if (!empty($studentStatuses)) {
+            $query->whereIn('student_status', $studentStatuses);
         }
 
-        // Filter status khusus (JSONB array: Umum, Yatim, Dhu'afa, Piatu)
-        if ($request->filled('special_status')) {
-            $query->whereJsonContains('status', $request->special_status);
+        // Filter status khusus (JSONB array) — OR logic jika multiple
+        $specialStatuses = array_filter((array) $request->input('special_status', $request->input('special_status[]', [])));
+        if (!empty($specialStatuses)) {
+            $query->where(function ($q) use ($specialStatuses) {
+                foreach ($specialStatuses as $s) {
+                    $q->orWhereJsonContains('status', $s);
+                }
+            });
         }
 
         // Filter gender
@@ -56,10 +63,11 @@ class StudentController extends Controller
             $query->where('gender', $request->gender);
         }
 
-        // Filter kelas (tahun ajaran aktif)
-        if ($request->filled('class_id')) {
-            $query->whereHas('currentEnrollment', function ($q) use ($request) {
-                $q->where('class_id', $request->class_id);
+        // Filter kelas — single atau array
+        $classIds = array_filter((array) $request->input('class_id', $request->input('class_id[]', [])));
+        if (!empty($classIds)) {
+            $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
+                $q->whereIn('class_id', $classIds);
             });
         }
 

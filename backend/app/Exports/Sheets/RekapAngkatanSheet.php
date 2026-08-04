@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
  */
 class RekapAngkatanSheet implements FromCollection, WithTitle, WithHeadings, ShouldAutoSize
 {
+    use AppliesStudentFilters;
     public function __construct(private array $filters = []) {}
 
     public function title(): string
@@ -42,26 +43,7 @@ class RekapAngkatanSheet implements FromCollection, WithTitle, WithHeadings, Sho
                 sum(case when student_status = 'nonaktif' then 1 else 0 end) as nonaktif
             ");
 
-        if (!empty($this->filters['tahun_masuk'])) {
-            $query->where('tahun_masuk', $this->filters['tahun_masuk']);
-        }
-        if (!empty($this->filters['tahun_masuk_from'])) {
-            $query->where('tahun_masuk', '>=', $this->filters['tahun_masuk_from']);
-        }
-        if (!empty($this->filters['tahun_masuk_to'])) {
-            $query->where('tahun_masuk', '<=', $this->filters['tahun_masuk_to']);
-        }
-        if (!empty($this->filters['student_status'])) {
-            $query->where('student_status', $this->filters['student_status']);
-        }
-        if (!empty($this->filters['special_status'])) {
-            $query->whereJsonContains('status', $this->filters['special_status']);
-        }
-        if (!empty($this->filters['class_id'])) {
-            $query->whereHas('currentEnrollment', fn($q) => $q->where('class_id', $this->filters['class_id']));
-        }
-
-        $rows = $query->groupBy('tahun_masuk')->orderByDesc('tahun_masuk')->get();
+        $rows = $this->applyFilters($query)->groupBy('tahun_masuk')->orderByDesc('tahun_masuk')->get();
 
         return $rows->map(fn ($row) => [
             $row->tahun_masuk,
