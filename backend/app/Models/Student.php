@@ -24,6 +24,7 @@ class Student extends Model
         'total_siblings',
         'status',
         'tahun_masuk',
+        'tahun_angkatan',
         'guardian_type',
         'entry_class_level',
         'student_status',
@@ -47,6 +48,7 @@ class Student extends Model
             'birth_date' => 'date',
             'status' => 'array', // JSONB → PHP array
             'tahun_masuk' => 'integer',
+            'tahun_angkatan' => 'integer',
             'sibling_order' => 'integer',
             'total_siblings' => 'integer',
         ];

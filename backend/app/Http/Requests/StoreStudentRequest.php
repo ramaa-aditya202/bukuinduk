@@ -40,6 +40,10 @@ class StoreStudentRequest extends FormRequest
                 'required', 'integer', 'min:2000',
                 'max:' . date('Y'), // Tidak boleh di masa depan
             ],
+            'tahun_angkatan'    => [
+                'nullable', 'integer', 'min:2000',
+                'max:' . date('Y'), // Tidak boleh di masa depan
+            ],
             'guardian_type'     => ['required', Rule::in(['ayah', 'ibu', 'orang_lain'])],
             'entry_class_level' => ['nullable', 'string', 'max:10'],
             'student_status'    => ['sometimes', Rule::in(['aktif', 'lulus', 'pindah', 'keluar', 'nonaktif'])],
@@ -106,6 +110,7 @@ class StoreStudentRequest extends FormRequest
             'nisn.unique'                 => 'NISN ini sudah terdaftar. Periksa kembali atau hubungi admin jika ini duplikasi data.',
             'nik.size'                    => 'NIK harus terdiri dari 16 digit.',
             'tahun_masuk.max'             => 'Tahun masuk tidak boleh di masa depan.',
+            'tahun_angkatan.max'          => 'Tahun angkatan tidak boleh di masa depan.',
             'birth_date.before'           => 'Tanggal lahir harus sebelum hari ini.',
             'father.name.required'        => 'Nama Ayah wajib diisi.',
             'mother.name.required'        => 'Nama Ibu wajib diisi.',

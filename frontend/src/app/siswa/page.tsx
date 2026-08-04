@@ -135,6 +135,12 @@ export default function StudentListPage() {
             </Button>
           )}
           {hasRole('super_admin', 'admin_tu') && (
+            <Button variant="secondary" onClick={() => router.push('/siswa/pindahan')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Siswa Pindahan
+            </Button>
+          )}
+          {hasRole('super_admin', 'admin_tu') && (
             <Button variant="primary" onClick={() => router.push('/siswa/tambah')}>
               <Plus className="w-4 h-4 mr-2" />
               Tambah Siswa
