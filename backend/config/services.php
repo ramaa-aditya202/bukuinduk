@@ -48,7 +48,7 @@ return [
         'authorize_url' => '/application/o/authorize/',
         'token_url'     => '/application/o/token/',
         'userinfo_url'  => '/application/o/userinfo/',
-        'logout_url'    => '/application/o/bukuinduk/end-session/',
+        'logout_url'    => env('AUTHENTIK_LOGOUT_URL', '/application/o/bukuinduk/end-session/'),
 
         // Group → Role Mapping
         'role_mapping' => [
