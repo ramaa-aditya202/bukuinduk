@@ -190,6 +190,7 @@ export default function KelasPage() {
             <div className="col-span-2">
               <Select
                 label="Tingkat Kelas"
+                placeholder="-- Pilih Tingkat Kelas --"
                 options={[
                   { label: 'Kelas 10', value: '10' },
                   { label: 'Kelas 11', value: '11' },
@@ -212,7 +213,10 @@ export default function KelasPage() {
             <div className="col-span-2">
               <Select
                 label="Wali Kelas (Opsional)"
-                options={teachers.map(t => ({ label: t.name, value: t.id }))}
+                options={[
+                  { label: '-- Kosongkan Wali Kelas --', value: '' },
+                  ...teachers.map(t => ({ label: t.name, value: t.id }))
+                ]}
                 value={formData.homeroom_teacher_id}
                 onChange={(e) => setFormData({ ...formData, homeroom_teacher_id: e.target.value })}
               />
