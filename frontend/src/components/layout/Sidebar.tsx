@@ -48,7 +48,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 space-y-1">
+      <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
         {navItems
           .filter((item) => item.roles.some((r) => hasRole(r)))
           .map((item) => {

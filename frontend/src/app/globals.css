@@ -210,7 +210,7 @@
 
   /* ── Sidebar ── */
   .sidebar {
-    @apply w-64 bg-emerald-800 text-white min-h-screen flex flex-col;
+    @apply w-64 bg-emerald-800 text-white h-screen sticky top-0 flex flex-col;
   }
   .sidebar-link {
     @apply flex items-center gap-3 px-4 py-3 text-sm text-emerald-100 rounded-lg mx-2
