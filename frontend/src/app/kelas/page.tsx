@@ -143,10 +143,10 @@ export default function KelasPage() {
       header: 'Aksi',
       cell: (row: ClassRoom) => (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-600" onClick={() => handleOpenEdit(row)}>
+          <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-blue-600" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenEdit(row); }}>
             <Edit2 className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-red-600" onClick={() => handleDelete(row.id)}>
+          <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-red-600" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(row.id); }}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
