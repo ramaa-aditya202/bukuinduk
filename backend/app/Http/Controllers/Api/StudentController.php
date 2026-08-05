@@ -116,6 +116,7 @@ class StudentController extends Controller
         $data = $student->toArray();
         $data['nik'] = $canViewSensitive ? $student->nik : $student->masked_nik;
         $data['photo_url'] = $student->photo?->signed_url;
+        $data['current_class'] = $student->classRoom?->name ?? '-';
 
         // Mask medical history untuk guru
         if (!$canViewSensitive) {
