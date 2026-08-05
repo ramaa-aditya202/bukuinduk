@@ -35,8 +35,7 @@ class GenerateProfilePdfJob implements ShouldQueue
     {
         $student = $this->student->load([
             'parents',
-            'enrollments.classRoom',
-            'enrollments.academicYear',
+            'classRoom',
             'documents',
         ]);
 
@@ -48,7 +47,7 @@ class GenerateProfilePdfJob implements ShouldQueue
             'father'       => $student->parents->firstWhere('type', 'ayah'),
             'mother'       => $student->parents->firstWhere('type', 'ibu'),
             'guardian'     => $guardianInfo,
-            'enrollments'  => $student->enrollments,
+            'currentClass' => $student->classRoom,
             'documents'    => $student->documents,
         ]);
 

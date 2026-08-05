@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClassController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
-use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\ProfileController;
@@ -61,11 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // GET /documents/{id}/serve ada di luar group ini (public signed URL)
     Route::post('/documents/{id}/reupload', [DocumentController::class, 'update']); // Reupload dokumen
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
-
-    // Enrollments
-    Route::post('/enrollments/bulk', [EnrollmentController::class, 'bulkStore']);
-    Route::apiResource('enrollments', EnrollmentController::class);
-
     // Academic Years — Admin only
     Route::middleware('role:super_admin,admin_tu')->group(function () {
         Route::apiResource('academic-years', AcademicYearController::class);

@@ -38,33 +38,10 @@ class ClassRoom extends Model
     }
 
     /**
-     * Semua enrollment di kelas ini
+     * Semua siswa di kelas ini
      */
-    public function enrollments()
+    public function students()
     {
-        return $this->hasMany(Enrollment::class, 'class_id');
-    }
-
-    /**
-     * Siswa di kelas ini untuk tahun ajaran tertentu
-     */
-    public function studentsForYear($academicYearId)
-    {
-        return $this->enrollments()
-                    ->where('academic_year_id', $academicYearId)
-                    ->with('student');
-    }
-
-    /**
-     * Siswa di kelas ini untuk tahun ajaran aktif
-     */
-    public function currentStudents()
-    {
-        $activeYear = AcademicYear::active()->first();
-        if (!$activeYear) {
-            return collect();
-        }
-
-        return $this->studentsForYear($activeYear->id);
+        return $this->hasMany(Student::class, 'class_id');
     }
 }

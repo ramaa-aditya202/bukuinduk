@@ -90,7 +90,6 @@ class StoreStudentRequest extends FormRequest
 
             // ── Enrollment (opsional, bisa diisi saat pertama dibuat) ──
             'class_id'         => ['nullable', 'uuid', 'exists:classes,id'],
-            'academic_year_id' => ['nullable', 'uuid', 'exists:academic_years,id'],
 
             // ── Alamat Tinggal (stepper) ──
             'address_street'      => ['nullable', 'string', 'max:500'],

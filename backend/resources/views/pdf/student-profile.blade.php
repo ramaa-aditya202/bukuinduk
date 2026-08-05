@@ -303,33 +303,21 @@
         </table>
     </div>
 
-    <!-- Section: Riwayat Akademik -->
+    <!-- Section: Kelas Saat Ini -->
     <div class="section">
-        <div class="section-title">D. Riwayat Akademik</div>
-        @if($enrollments->count() > 0)
-        <table class="timeline-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Tahun Ajaran</th>
-                    <th>Kelas</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($enrollments as $i => $enrollment)
-                <tr>
-                    <td>{{ $i + 1 }}</td>
-                    <td>{{ $enrollment->academicYear->label }}</td>
-                    <td>{{ $enrollment->classRoom->name }}</td>
-                    <td>{{ $enrollment->status_label }}</td>
-                </tr>
-                @endforeach
-            </tbody>
+        <div class="section-title">D. Kelas Saat Ini</div>
+        <table class="data-table">
+            <tr>
+                <td class="label">Kelas</td>
+                <td>{{ $currentClass?->name ?? 'Belum ada kelas' }}</td>
+            </tr>
+            @if($currentClass)
+            <tr>
+                <td class="label">Tingkat</td>
+                <td>{{ $currentClass->level }}</td>
+            </tr>
+            @endif
         </table>
-        @else
-        <p style="color: #999; font-style: italic;">Belum ada data riwayat akademik.</p>
-        @endif
     </div>
 
     <!-- Section: Kelengkapan Dokumen -->

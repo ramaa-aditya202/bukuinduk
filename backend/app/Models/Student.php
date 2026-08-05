@@ -26,6 +26,7 @@ class Student extends Model
         'tahun_masuk',
         'tahun_angkatan',
         'guardian_type',
+        'class_id',
         'entry_class_level',
         'student_status',
         'photo_document_id',
@@ -128,18 +129,9 @@ class Student extends Model
                      ->where('type', $this->guardian_type);
     }
 
-    public function enrollments()
+    public function classRoom()
     {
-        return $this->hasMany(Enrollment::class)->orderByDesc('created_at');
-    }
-
-    /**
-     * Enrollment tahun ajaran aktif (kelas saat ini)
-     */
-    public function currentEnrollment()
-    {
-        return $this->hasOne(Enrollment::class)
-                    ->whereHas('academicYear', fn ($q) => $q->where('is_active', true));
+        return $this->belongsTo(ClassRoom::class, 'class_id');
     }
 
     public function documents()

@@ -39,10 +39,7 @@ class AcademicYear extends Model
      | Relationships
      | ---------------------------------------------------------------- */
 
-    public function enrollments()
-    {
-        return $this->hasMany(Enrollment::class);
-    }
+
 
     /* ----------------------------------------------------------------
      | Business Logic

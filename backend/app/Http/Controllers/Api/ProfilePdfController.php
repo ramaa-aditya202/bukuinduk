@@ -20,8 +20,7 @@ class ProfilePdfController extends Controller
     {
         $student = Student::with([
             'parents',
-            'enrollments.classRoom',
-            'enrollments.academicYear',
+            'classRoom',
             'documents',
         ])->findOrFail($id);
 
@@ -62,7 +61,7 @@ class ProfilePdfController extends Controller
             'father'           => $student->parents->firstWhere('type', 'ayah'),
             'mother'           => $student->parents->firstWhere('type', 'ibu'),
             'guardian'         => $guardianInfo,
-            'enrollments'      => $student->enrollments,
+            'currentClass'     => $student->classRoom,
             'documents'        => $student->documents,
             'photoBase64'      => $photoBase64,
             'imageDocuments'   => $imageDocuments,

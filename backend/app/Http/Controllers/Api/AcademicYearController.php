@@ -63,8 +63,7 @@ class AcademicYearController extends Controller
     {
         $year = AcademicYear::findOrFail($id);
 
-        // Hapus data enrollment terkait secara paksa
-        $year->enrollments()->delete();
+
 
         $year->delete();
 

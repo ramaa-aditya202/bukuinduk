@@ -21,14 +21,12 @@ class StudentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Student::with(['currentEnrollment.classRoom', 'currentEnrollment.academicYear', 'photo']);
+        $query = Student::with(['classRoom', 'photo']);
 
         // Filter berdasarkan role (wali kelas hanya lihat siswanya)
         if ($request->user()->isWaliKelas()) {
             $classIds = $request->user()->homeroomClasses()->pluck('id');
-            $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
-                $q->whereIn('class_id', $classIds);
-            });
+            $query->whereIn('class_id', $classIds);
         }
 
         // Search (nama / NISN)
@@ -66,9 +64,7 @@ class StudentController extends Controller
         // Filter kelas — array: class_id[]=uuid1&class_id[]=uuid2
         $classIds = array_filter((array) ($request->input('class_id') ?? []));
         if (!empty($classIds)) {
-            $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
-                $q->whereIn('class_id', $classIds);
-            });
+            $query->whereIn('class_id', $classIds);
         }
 
         // Sorting
@@ -88,7 +84,7 @@ class StudentController extends Controller
         $students->getCollection()->transform(function ($student) use ($canViewSensitive) {
             $data = $student->toArray();
             $data['nik'] = $canViewSensitive ? $student->nik : $student->masked_nik;
-            $data['current_class'] = $student->currentEnrollment?->classRoom?->name ?? '-';
+            $data['current_class'] = $student->classRoom?->name ?? '-';
             $data['photo_url'] = $student->photo?->signed_url;
             return $data;
         });
@@ -105,8 +101,7 @@ class StudentController extends Controller
     {
         $student = Student::with([
             'parents',
-            'enrollments.classRoom',
-            'enrollments.academicYear',
+            'classRoom',
             'documents',
             'photo',
             'createdBy',
@@ -142,17 +137,8 @@ class StudentController extends Controller
             ];
         });
 
-        // Enrollments sebagai timeline
-        $data['academic_timeline'] = $student->enrollments->map(function ($e) {
-            return [
-                'id'             => $e->id,
-                'academic_year'  => $e->academicYear->label,
-                'class_name'     => $e->classRoom->name,
-                'class_level'    => $e->classRoom->level,
-                'status'         => $e->status,
-                'status_label'   => $e->status_label,
-            ];
-        });
+        // Tidak ada lagi riwayat enrollment
+        $data['academic_timeline'] = [];
 
         // Log akses data sensitif
         if ($canViewSensitive) {
@@ -186,6 +172,7 @@ class StudentController extends Controller
             'tahun_masuk'       => $validated['tahun_masuk'],
             'tahun_angkatan'    => $validated['tahun_angkatan'] ?? null,
             'guardian_type'     => $validated['guardian_type'],
+            'class_id'          => $validated['class_id'] ?? null,
             'entry_class_level' => $validated['entry_class_level'] ?? null,
             'student_status'    => $validated['student_status'] ?? 'aktif',
             'created_by'        => $request->user()->id,
@@ -224,22 +211,12 @@ class StudentController extends Controller
             ]);
         }
 
-        // ── Enrollment awal (jika class_id dan academic_year_id diberikan) ──
-        if (!empty($validated['class_id']) && !empty($validated['academic_year_id'])) {
-            Enrollment::create([
-                'student_id'      => $student->id,
-                'class_id'        => $validated['class_id'],
-                'academic_year_id' => $validated['academic_year_id'],
-                'status'          => null,
-            ]);
-        }
-
-        // Audit log
+        // ── Audit log ──
         AuditService::logCreate($student, $validated);
 
         return response()->json([
             'message' => 'Data siswa berhasil disimpan.',
-            'data'    => $student->load(['parents', 'currentEnrollment.classRoom']),
+            'data'    => $student->load(['parents', 'classRoom']),
         ], 201);
     }
 
@@ -271,6 +248,7 @@ class StudentController extends Controller
             'tahun_masuk'       => $validated['tahun_masuk'],
             'tahun_angkatan'    => $validated['tahun_angkatan'] ?? $student->tahun_angkatan,
             'guardian_type'     => $validated['guardian_type'],
+            'class_id'          => $validated['class_id'] ?? $student->class_id,
             'entry_class_level' => $validated['entry_class_level'] ?? null,
             'student_status'    => $validated['student_status'] ?? $student->student_status,
             'updated_by'        => $request->user()->id,
@@ -312,7 +290,7 @@ class StudentController extends Controller
 
         return response()->json([
             'message' => 'Data siswa berhasil diperbarui.',
-            'data'    => $student->fresh(['parents', 'currentEnrollment.classRoom']),
+            'data'    => $student->fresh(['parents', 'classRoom']),
         ]);
     }
 

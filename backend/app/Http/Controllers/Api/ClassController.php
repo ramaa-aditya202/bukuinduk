@@ -59,9 +59,8 @@ class ClassController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $class = ClassRoom::findOrFail($id);
-        
-        // Hapus data enrollment terkait secara paksa
-        $class->enrollments()->delete();
+        // Set null untuk siswa yang berada di kelas ini
+        $class->students()->update(['class_id' => null]);
         
         $class->delete();
 

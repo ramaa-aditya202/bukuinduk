@@ -62,9 +62,8 @@ const studentSchema = z.object({
   address_province: z.string().optional(),
   address_postal_code: z.string().optional(),
   
-  // Enrollment (Optional untuk form ini, bisa diisi lewat menu lain, tapi disediakan field dasar)
+  // Class (Optional untuk form ini, bisa diisi lewat menu lain)
   class_id: z.string().optional(),
-  academic_year_id: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -388,7 +387,7 @@ function StepRiwayat() {
       
       <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mt-6">
         <p className="text-sm text-blue-800">
-          Penempatan kelas (Enrollment) dapat dilakukan nanti melalui menu detail siswa atau fitur kenaikan kelas massal.
+          Penempatan kelas dapat dilakukan nanti melalui menu detail siswa.
         </p>
       </div>
     </div>

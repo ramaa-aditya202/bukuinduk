@@ -202,7 +202,7 @@ export default function DetailSiswaPage() {
                 },
                 {
                   id: 'akademik',
-                  label: 'Riwayat Akademik',
+                  label: 'Data Kelas',
                   content: <TabAkademik student={student} hasRole={hasRole} onRefresh={fetchStudent} />,
                 },
                 {
@@ -413,47 +413,42 @@ function TabKeluarga({ student }: { student: Student }) {
   );
 }
 
-// ── Tab 4: Riwayat Akademik + Assign Kelas ──
+// ── Tab 4: Data Kelas ──
 function TabAkademik({ student, hasRole, onRefresh }: { student: Student, hasRole: any, onRefresh: () => void }) {
   const [showAssign, setShowAssign] = useState(false);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
-  const [years, setYears] = useState<AcademicYear[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
   const [assigning, setAssigning] = useState(false);
 
   const fetchOptions = async () => {
     try {
-      const [classRes, yearRes] = await Promise.all([
-        api.get('/classes'),
-        api.get('/academic-years'),
-      ]);
+      const classRes = await api.get('/classes');
       setClasses(classRes.data.data || classRes.data);
-      setYears(yearRes.data.data || yearRes.data);
     } catch (e) {
       console.error('Failed to fetch options', e);
     }
   };
 
   const handleAssign = async () => {
-    if (!selectedClass || !selectedYear) {
-      toast.error('Pilih kelas dan tahun ajaran.');
+    if (!selectedClass) {
+      toast.error('Pilih kelas.');
       return;
     }
     setAssigning(true);
     try {
-      await api.post('/enrollments', {
-        student_id: student.id,
+      await api.put(`/students/${student.id}`, {
+        ...student,
         class_id: selectedClass,
-        academic_year_id: selectedYear,
+        father: student?.parents?.find(p => p.type === 'ayah') || {},
+        mother: student?.parents?.find(p => p.type === 'ibu') || {},
+        guardian: student?.parents?.find(p => p.type === 'wali') || {}
       });
-      toast.success('Siswa berhasil ditempatkan di kelas!');
+      toast.success('Siswa berhasil dipindahkan ke kelas!');
       setShowAssign(false);
       setSelectedClass('');
-      setSelectedYear('');
       onRefresh();
     } catch (error: any) {
-      toast.error(error?.message || 'Gagal menempatkan siswa.');
+      toast.error(error?.message || 'Gagal memindahkan siswa.');
     } finally {
       setAssigning(false);
     }
@@ -461,68 +456,45 @@ function TabAkademik({ student, hasRole, onRefresh }: { student: Student, hasRol
 
   return (
     <div className="p-6">
-      {/* Assign Kelas Button */}
-      {hasRole('super_admin', 'admin_tu') && (
-        <div className="mb-6">
-          {!showAssign ? (
-            <Button variant="primary" size="sm" onClick={() => { setShowAssign(true); fetchOptions(); }}>
-              Tempatkan ke Kelas
-            </Button>
-          ) : (
-            <div className="bg-cream-50 border border-stone-200 rounded-xl p-4 space-y-4 animate-fade-in">
-              <h4 className="font-medium text-slate-800 text-sm">Tempatkan Siswa ke Kelas</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Select
-                  label="Tahun Ajaran"
-                  placeholder="Pilih tahun ajaran"
-                  options={years.map(y => ({ label: y.label, value: y.id }))}
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  required
-                />
-                <Select
-                  label="Kelas"
-                  placeholder="Pilih kelas"
-                  options={classes.map(c => ({ label: `${c.name} (${c.level})`, value: c.id }))}
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="primary" size="sm" onClick={handleAssign} isLoading={assigning}>
-                  Simpan
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowAssign(false)}>
-                  Batal
-                </Button>
-              </div>
-            </div>
-          )}
+      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+        <div>
+           <h4 className="font-semibold text-slate-800 text-sm text-stone-500 mb-1">Kelas Saat Ini</h4>
+           <p className="text-xl font-bold text-emerald-700">{student.current_class || 'Belum ada kelas'}</p>
         </div>
-      )}
-
-      {/* Timeline */}
-      {!student.academic_timeline || student.academic_timeline.length === 0 ? (
-        <EmptyState title="Belum Ada Riwayat" description="Siswa belum ditempatkan di kelas manapun." className="py-8" />
-      ) : (
-        <div className="space-y-0">
-          {student.academic_timeline.map((entry, idx) => (
-            <div key={entry.id} className="timeline-item">
-              <div className={`timeline-dot ${idx === 0 ? 'timeline-dot-active' : 'timeline-dot-complete'}`} />
-              <div className="bg-cream-50 rounded-lg p-4 border border-stone-100">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-semibold text-slate-800">Kelas {entry.class_name}</h4>
-                    <p className="text-xs text-stone-500">Tahun Ajaran {entry.academic_year}</p>
-                  </div>
-                  <Badge variant={entry.status ? 'lulus' : 'default'}>{entry.status_label}</Badge>
+        
+        {/* Assign Kelas Button */}
+        {hasRole('super_admin', 'admin_tu') && (
+          <div>
+            {!showAssign ? (
+              <Button variant="primary" size="sm" onClick={() => { setShowAssign(true); fetchOptions(); }}>
+                Ubah Kelas
+              </Button>
+            ) : (
+              <div className="bg-cream-50 border border-stone-200 rounded-xl p-4 space-y-4 animate-fade-in w-full md:w-80">
+                <h4 className="font-medium text-slate-800 text-sm">Pindah Kelas</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  <Select
+                    label="Pilih Kelas Baru"
+                    placeholder="-- Pilih kelas --"
+                    options={classes.map(c => ({ label: `${c.name} (${c.level})`, value: c.id }))}
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowAssign(false)}>
+                    Batal
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleAssign} isLoading={assigning}>
+                    Simpan
+                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

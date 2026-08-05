@@ -21,7 +21,7 @@ class RekapUtamaSheet implements FromQuery, WithTitle, WithHeadings, WithMapping
 
     public function query()
     {
-        $query = Student::with(['currentEnrollment.classRoom', 'currentEnrollment.academicYear']);
+        $query = Student::with(['classRoom']);
         return $this->applyFilters($query)->orderBy('name');
     }
 
@@ -48,7 +48,7 @@ class RekapUtamaSheet implements FromQuery, WithTitle, WithHeadings, WithMapping
             $student->birth_place,
             $student->birth_date?->format('d/m/Y'),
             $student->tahun_masuk,
-            $student->currentEnrollment?->classRoom?->name ?? '-',
+            $student->classRoom?->name ?? '-',
             implode(', ', $student->status ?? []),
             $student->sibling_order,
             $student->total_siblings,

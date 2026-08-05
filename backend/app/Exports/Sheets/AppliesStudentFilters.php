@@ -48,9 +48,7 @@ trait AppliesStudentFilters
         // Filter kelas (array → whereIn pada enrollment)
         $classIds = array_filter((array) ($filters['class_id'] ?? []));
         if (!empty($classIds)) {
-            $query->whereHas('currentEnrollment', function ($q) use ($classIds) {
-                $q->whereIn('class_id', $classIds);
-            });
+            $query->whereIn('class_id', $classIds);
         }
 
         return $query;

@@ -33,7 +33,6 @@ class ExportController extends Controller
             'special_status.*'   => 'string|in:Umum,Yatim,Dhu\'afa,Piatu',
             'class_id'           => 'nullable|array',
             'class_id.*'         => 'uuid|exists:classes,id',
-            'academic_year_id'   => 'nullable|uuid|exists:academic_years,id',
         ]);
 
         $filename = 'buku_induk_export_' . now()->format('Y-m-d_His') . '.xlsx';

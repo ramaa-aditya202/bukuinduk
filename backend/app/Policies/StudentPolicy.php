@@ -80,9 +80,6 @@ class StudentPolicy
     {
         $homeroomClassIds = $user->homeroomClasses()->pluck('id');
 
-        return $student->enrollments()
-                       ->whereIn('class_id', $homeroomClassIds)
-                       ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
-                       ->exists();
+        return in_array($student->class_id, $homeroomClassIds->toArray());
     }
 }
